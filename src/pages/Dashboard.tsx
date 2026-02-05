@@ -9,19 +9,19 @@ import RecentActivityCard from "@/components/dashboard/RecentActivityCard";
 const Dashboard = () => {
   return (
     <AppLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-8 animate-fade-in">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Welcome back, Dr. Chen. Here's your lab inventory overview.
+        <div className="border-b-2 border-border pb-6">
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-2 font-medium">
+            Welcome back, <span className="text-foreground font-semibold">Dr. Chen</span>. Here's your lab inventory overview.
           </p>
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard
-            title="Total Plant Batches"
+            title="Plant Batches"
             value="1,247"
             subtitle="Across 12 species"
             icon={<Leaf className="h-5 w-5 text-primary" />}
@@ -40,7 +40,7 @@ const Dashboard = () => {
             icon={<Wrench className="h-5 w-5 text-primary" />}
           />
           <StatCard
-            title="Transactions Today"
+            title="Today's Transactions"
             value="24"
             subtitle="8 pending approvals"
             icon={<ArrowLeftRight className="h-5 w-5 text-primary" />}
@@ -48,12 +48,12 @@ const Dashboard = () => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <PlantHealthCard />
           <ChemicalExpiryCard />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <EquipmentAvailabilityCard />
           <RecentActivityCard />
         </div>

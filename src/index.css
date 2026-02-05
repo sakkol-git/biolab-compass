@@ -6,131 +6,164 @@
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
 @import '@fontsource/inter/700.css';
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Lora&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Space+Mono&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
 
-/* Bio-Lab Design System - "Clinical Precision × Organic Growth" */
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEO-BRUTALIST DESIGN SYSTEM — "Clinical Precision × Organic Growth"
+   ═══════════════════════════════════════════════════════════════════════════
+   
+   DESIGN PRINCIPLES:
+   1. Bold borders, hard shadows — no soft edges
+   2. Generous white space — let content breathe
+   3. Strong typographic hierarchy — clear visual order
+   4. Color with purpose — green = action, not decoration
+   5. Consistency — every component follows the same rules
+   
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer base {
   :root {
-    /* Primary Green - Growth & Action */
-    --primary: 161 93.5484% 30.3922%;
+    /* ─────────────────────────────────────────────────────────────────────────
+       COLOR SYSTEM
+       ───────────────────────────────────────────────────────────────────────── */
+    
+    /* Primary Green — Growth, Action, Success */
+    --primary: 145 63% 32%;
     --primary-foreground: 0 0% 100%;
-
-    /* Background White - Sterility & Trust */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
-
-    /* Surface Grey - Separation without noise */
+    
+    /* Backgrounds — Clean, Clinical White */
+    --background: 60 9% 98%;
+    --foreground: 0 0% 9%;
+    
+    /* Cards — Subtle elevation */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
-
+    --card-foreground: 0 0% 9%;
+    
+    /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
-
-    /* Secondary */
-    --secondary: 213 26.8293% 83.9216%;
-    --secondary-foreground: 0 0% 0%;
-
-    /* Muted */
-    --muted: 0 0% 96%;
+    --popover-foreground: 0 0% 9%;
+    
+    /* Secondary — Muted actions */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 0 0% 9%;
+    
+    /* Muted — Subdued elements */
+    --muted: 210 20% 96%;
     --muted-foreground: 0 0% 45%;
-
-    /* Accent */
-    --accent: 175 83.8509% 31.5686%;
-    --accent-foreground: 0 0% 0%;
-
-    /* Status Colors */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-
-    --warning: 38 100% 50%;
-    --warning-foreground: 0 0% 10%;
-
-    --success: 122 39% 33%;
+    
+    /* Accent — Teal complement */
+    --accent: 175 65% 35%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Status Colors — Clear, immediate recognition */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+    
+    --success: 145 63% 32%;
     --success-foreground: 0 0% 100%;
-
-    /* UI Elements */
-    --border: 0 0% 0%;
-    --input: 0 0% 0%;
-    --ring: 0 0% 0%;
-
-    --radius: 0rem;
-
-    /* Sidebar */
-    --sidebar-background: 210 20% 98%;
-    --sidebar-foreground: 0 0% 0%;
-    --sidebar-primary: 0 0% 0%;
+    
+    /* UI Chrome */
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 145 63% 32%;
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       SHAPE SYSTEM — Sharp, intentional
+       ───────────────────────────────────────────────────────────────────────── */
+    --radius: 0px;
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       SHADOW SYSTEM — Hard, graphic shadows
+       ───────────────────────────────────────────────────────────────────────── */
+    --shadow-2xs: 1px 1px 0px 0px hsl(0 0% 15%);
+    --shadow-xs: 2px 2px 0px 0px hsl(0 0% 15%);
+    --shadow-sm: 3px 3px 0px 0px hsl(0 0% 15%);
+    --shadow: 4px 4px 0px 0px hsl(0 0% 15%);
+    --shadow-md: 6px 6px 0px 0px hsl(0 0% 15%);
+    --shadow-lg: 8px 8px 0px 0px hsl(0 0% 15%);
+    --shadow-xl: 12px 12px 0px 0px hsl(0 0% 15%);
+    --shadow-2xl: 16px 16px 0px 0px hsl(0 0% 15%);
+    
+    /* Interactive shadow (hover state) */
+    --shadow-hover: 6px 6px 0px 0px hsl(145 63% 32%);
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       SIDEBAR
+       ───────────────────────────────────────────────────────────────────────── */
+    --sidebar-background: 60 9% 98%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: 145 63% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 90%;
-    --sidebar-accent-foreground: 0 0% 0%;
-    --sidebar-border: 0 0% 0%;
-    --sidebar-ring: 0 0% 0%;
-
-    /* Custom Shadows */
-    --shadow-sm: 3px 3px 0px 0px #000000;
-    --shadow-md: 8px 8px 0px 0px #000000;
-    --shadow-lg: 12px 12px 0px 0px #000000;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --sidebar: 0 0% 98%;
-    --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-    --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
-    --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --shadow-2xs: 1px 1px 0px 0px #000000;
-    --shadow-xs: 2px 2px 0px 0px #000000;
-    --shadow: 5px 5px 0px 0px #000000;
-    --shadow-xl: 16px 16px 0px 0px #000000;
-    --shadow-2xl: 24px 24px 0px 0px #000000;
+    --sidebar-accent: 145 63% 32%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 145 63% 32%;
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       CHART COLORS
+       ───────────────────────────────────────────────────────────────────────── */
+    --chart-1: 145 63% 32%;
+    --chart-2: 175 65% 35%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 0 72% 51%;
+    --chart-5: 210 20% 50%;
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       TYPOGRAPHY
+       ───────────────────────────────────────────────────────────────────────── */
+    --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    
+    --tracking-tight: -0.02em;
     --tracking-normal: 0em;
+    --tracking-wide: 0.025em;
+    
     --spacing: 0.25rem;
   }
+
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 0%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 145 60% 45%;
+    --primary-foreground: 0 0% 9%;
     --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary-foreground: 0 0% 95%;
     --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 30%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 175 60% 40%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 100%;
-    --input: 0 0% 100%;
-    --ring: 0 0% 100%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar: 0 0% 5%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 100%;
-    --sidebar-ring: 0 0% 100%;
-    --radius: 0rem;
-    --shadow-2xs: 1px 1px 0px 0px #ffffff;
-    --shadow-xs: 2px 2px 0px 0px #ffffff;
-    --shadow-sm: 3px 3px 0px 0px #ffffff;
-    --shadow: 5px 5px 0px 0px #ffffff;
-    --shadow-md: 8px 8px 0px 0px #ffffff;
-    --shadow-lg: 12px 12px 0px 0px #ffffff;
-    --shadow-xl: 16px 16px 0px 0px #ffffff;
-    --shadow-2xl: 24px 24px 0px 0px #ffffff;
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 145 60% 45%;
+    
+    --shadow-2xs: 1px 1px 0px 0px hsl(0 0% 85%);
+    --shadow-xs: 2px 2px 0px 0px hsl(0 0% 85%);
+    --shadow-sm: 3px 3px 0px 0px hsl(0 0% 85%);
+    --shadow: 4px 4px 0px 0px hsl(0 0% 85%);
+    --shadow-md: 6px 6px 0px 0px hsl(0 0% 85%);
+    --shadow-lg: 8px 8px 0px 0px hsl(0 0% 85%);
+    --shadow-xl: 12px 12px 0px 0px hsl(0 0% 85%);
+    --shadow-2xl: 16px 16px 0px 0px hsl(0 0% 85%);
+    --shadow-hover: 6px 6px 0px 0px hsl(145 60% 45%);
+    
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 145 60% 45%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 145 60% 45%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 145 60% 45%;
   }
 }
 
@@ -140,59 +173,245 @@
   }
 
   html {
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    letter-spacing: -0.01em;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     TYPOGRAPHY SCALE
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+    letter-spacing: -0.03em;
+  }
+  
+  h2 {
+    @apply text-2xl font-semibold tracking-tight;
+    letter-spacing: -0.02em;
+  }
+  
+  h3 {
+    @apply text-lg font-semibold;
+    letter-spacing: -0.01em;
+  }
+  
+  h4 {
+    @apply text-base font-semibold;
   }
 }
 
 @layer components {
-  /* Status Pills */
+  /* ═══════════════════════════════════════════════════════════════════════════
+     BRUTALIST CARD SYSTEM
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  .brutalist-card {
+    @apply bg-card border-2 border-border p-6;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s ease-out, transform 0.15s ease-out;
+  }
+  
+  .brutalist-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translate(-2px, -2px);
+  }
+  
+  .brutalist-card-flat {
+    @apply bg-card border-2 border-border p-6;
+  }
+  
+  .brutalist-card-accent {
+    @apply bg-card border-2 border-primary p-6;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     STATUS PILLS — Growth Stages
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
   .status-pill {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wide border-2;
   }
 
   .status-seed {
-    @apply bg-gray-100 text-gray-700;
+    @apply bg-secondary text-secondary-foreground border-border;
   }
 
   .status-seedling {
-    @apply bg-green-100 text-green-700;
+    @apply bg-primary/15 text-primary border-primary/30;
   }
 
   .status-growing {
-    @apply bg-primary/10 text-primary;
+    @apply bg-primary text-primary-foreground border-primary;
   }
 
   .status-harvested {
-    @apply bg-amber-100 text-amber-700;
+    @apply bg-warning/15 text-warning border-warning/30;
   }
 
   .status-failed {
-    @apply bg-red-100 text-red-700;
+    @apply bg-destructive/15 text-destructive border-destructive/30;
   }
 
-  /* Hazard Indicators */
+  /* ═══════════════════════════════════════════════════════════════════════════
+     HAZARD INDICATORS — Chemical Safety
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
   .hazard-high {
-    @apply border-l-4 border-destructive;
+    @apply border-l-4 border-l-destructive bg-destructive/5;
   }
 
   .hazard-medium {
-    @apply border-l-4 border-warning;
+    @apply border-l-4 border-l-warning bg-warning/5;
   }
 
   .hazard-low {
-    @apply border-l-4 border-primary;
+    @apply border-l-4 border-l-primary bg-primary/5;
   }
 
-  /* Data Table Enhancements */
-  .data-table-row {
-    @apply hover:bg-muted/50 transition-colors;
+  /* ═══════════════════════════════════════════════════════════════════════════
+     DATA TABLES — Dense, readable
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  .data-table {
+    @apply w-full border-2 border-border;
   }
-
-  .data-table-row:nth-child(even) {
+  
+  .data-table thead {
+    @apply bg-muted border-b-2 border-border;
+  }
+  
+  .data-table th {
+    @apply px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-muted-foreground;
+  }
+  
+  .data-table td {
+    @apply px-4 py-3 text-sm border-b border-border/50;
+  }
+  
+  .data-table tbody tr {
+    @apply transition-colors;
+  }
+  
+  .data-table tbody tr:hover {
+    @apply bg-muted/50;
+  }
+  
+  .data-table tbody tr:nth-child(even) {
     @apply bg-muted/30;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     ICON BADGES — Consistent icon containers
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  .icon-badge {
+    @apply inline-flex items-center justify-center w-10 h-10 border-2 border-border bg-muted;
+  }
+  
+  .icon-badge-primary {
+    @apply inline-flex items-center justify-center w-10 h-10 border-2 border-primary bg-primary/10;
+  }
+  
+  .icon-badge-destructive {
+    @apply inline-flex items-center justify-center w-10 h-10 border-2 border-destructive bg-destructive/10;
+  }
+  
+  .icon-badge-warning {
+    @apply inline-flex items-center justify-center w-10 h-10 border-2 border-warning bg-warning/10;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     BRUTALIST PROGRESS BARS
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  .brutalist-progress {
+    @apply h-3 bg-muted border-2 border-border overflow-hidden;
+  }
+  
+  .brutalist-progress-bar {
+    @apply h-full bg-primary transition-all duration-500;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     BRUTALIST INPUTS
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  .brutalist-input {
+    @apply w-full px-4 py-3 bg-background border-2 border-border text-sm;
+    @apply focus:outline-none focus:border-primary focus:ring-0;
+    @apply placeholder:text-muted-foreground;
+    transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+  }
+  
+  .brutalist-input:focus {
+    box-shadow: var(--shadow-xs);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     ACTIVITY INDICATOR
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  .activity-dot {
+    @apply w-2.5 h-2.5 border border-border;
+  }
+  
+  .activity-dot-primary {
+    @apply bg-primary;
+  }
+  
+  .activity-dot-warning {
+    @apply bg-warning;
+  }
+  
+  .activity-dot-destructive {
+    @apply bg-destructive;
+  }
+  
+  .activity-dot-muted {
+    @apply bg-muted-foreground/30;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SECTION HEADERS
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  .section-header {
+    @apply flex items-center gap-3 pb-4 mb-4 border-b-2 border-border;
+  }
+  
+  .section-title {
+    @apply text-base font-bold uppercase tracking-wide;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     BRUTALIST BADGE / TAG
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  .brutalist-badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-bold uppercase tracking-wide border-2;
+  }
+  
+  .brutalist-badge-primary {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+  
+  .brutalist-badge-destructive {
+    @apply bg-destructive text-destructive-foreground border-destructive;
+  }
+  
+  .brutalist-badge-warning {
+    @apply bg-warning text-warning-foreground border-warning;
+  }
+  
+  .brutalist-badge-muted {
+    @apply bg-muted text-muted-foreground border-border;
   }
 }

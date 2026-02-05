@@ -8,65 +8,70 @@ const PlantHealthCard = () => {
   
   const healthPercentage = Math.round((healthy / total) * 100);
 
+  const stats = [
+    { label: "Healthy", value: healthy, color: "bg-primary", textColor: "text-primary" },
+    { label: "Growing", value: growing, color: "bg-warning", textColor: "text-warning" },
+    { label: "Failed", value: failed, color: "bg-destructive", textColor: "text-destructive" },
+  ];
+
   return (
-    <div className="bg-background border border-border rounded-lg p-5 shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Leaf className="h-4 w-4 text-primary" />
+    <div className="bg-card border-2 border-border p-6 shadow-sm">
+      {/* Header */}
+      <div className="section-header">
+        <div className="icon-badge-primary">
+          <Leaf className="h-5 w-5 text-primary" />
         </div>
-        <h3 className="font-semibold text-foreground">Plant Inventory Health</h3>
+        <h3 className="section-title text-foreground">Plant Inventory Health</h3>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-8">
         {/* Circular Progress */}
-        <div className="relative w-28 h-28">
+        <div className="relative w-32 h-32 shrink-0">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+            {/* Background ring */}
             <circle
               cx="50"
               cy="50"
-              r="40"
+              r="42"
               stroke="currentColor"
-              strokeWidth="12"
+              strokeWidth="8"
               fill="none"
               className="text-muted"
             />
+            {/* Progress ring */}
             <circle
               cx="50"
               cy="50"
-              r="40"
+              r="42"
               stroke="currentColor"
-              strokeWidth="12"
+              strokeWidth="8"
               fill="none"
-              strokeDasharray={`${healthPercentage * 2.51} 251`}
-              strokeLinecap="round"
-              className="text-primary transition-all duration-500"
+              strokeDasharray={`${healthPercentage * 2.64} 264`}
+              className="text-primary transition-all duration-700"
             />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xl font-bold text-foreground">{healthPercentage}%</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-3xl font-bold text-foreground tabular-nums">{healthPercentage}%</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Health</span>
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-sm text-muted-foreground">
-              Healthy: <span className="font-medium text-foreground">{healthy.toLocaleString()}</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-warning" />
-            <span className="text-sm text-muted-foreground">
-              Growing: <span className="font-medium text-foreground">{growing}</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-destructive" />
-            <span className="text-sm text-muted-foreground">
-              Failed: <span className="font-medium text-foreground">{failed}</span>
-            </span>
-          </div>
+        {/* Stats Grid */}
+        <div className="flex-1 grid grid-cols-3 gap-3">
+          {stats.map((stat) => (
+            <div 
+              key={stat.label}
+              className="border-2 border-border p-3 text-center hover:shadow-xs transition-shadow"
+            >
+              <div className={`w-3 h-3 ${stat.color} border border-border mx-auto mb-2`} />
+              <p className={`text-xl font-bold tabular-nums ${stat.textColor}`}>
+                {stat.value.toLocaleString()}
+              </p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-1">
+                {stat.label}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

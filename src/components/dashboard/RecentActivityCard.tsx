@@ -1,5 +1,6 @@
 import { ArrowLeftRight, Plus, Minus, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const activities = [
   {
@@ -7,7 +8,7 @@ const activities = [
     action: "added",
     item: "Tomato Seedlings (Batch #127)",
     quantity: 50,
-    time: "2 minutes ago",
+    time: "2 min ago",
     type: "add",
   },
   {
@@ -16,21 +17,21 @@ const activities = [
     item: "Ethanol 95%",
     quantity: 500,
     unit: "mL",
-    time: "15 minutes ago",
+    time: "15 min ago",
     type: "consume",
   },
   {
     user: "Emily Rodriguez",
     action: "returned",
     item: "Microscope (M-012)",
-    time: "1 hour ago",
+    time: "1 hr ago",
     type: "return",
   },
   {
     user: "Dr. Michael Park",
     action: "borrowed",
     item: "pH Meter (PH-003)",
-    time: "2 hours ago",
+    time: "2 hr ago",
     type: "borrow",
   },
   {
@@ -39,81 +40,104 @@ const activities = [
     item: "Agar Powder",
     quantity: 100,
     unit: "g",
-    time: "3 hours ago",
+    time: "3 hr ago",
     type: "consume",
   },
 ];
 
-const getActionIcon = (type: string) => {
+const getActionConfig = (type: string) => {
   switch (type) {
     case "add":
-      return <Plus className="h-3.5 w-3.5 text-primary" />;
+      return { 
+        icon: Plus, 
+        bgColor: "bg-primary/10", 
+        borderColor: "border-primary/30",
+        iconColor: "text-primary" 
+      };
     case "consume":
-      return <Minus className="h-3.5 w-3.5 text-warning" />;
+      return { 
+        icon: Minus, 
+        bgColor: "bg-warning/10", 
+        borderColor: "border-warning/30",
+        iconColor: "text-warning" 
+      };
     case "return":
-      return <RotateCcw className="h-3.5 w-3.5 text-primary" />;
+      return { 
+        icon: RotateCcw, 
+        bgColor: "bg-primary/10", 
+        borderColor: "border-primary/30",
+        iconColor: "text-primary" 
+      };
     case "borrow":
-      return <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" />;
+      return { 
+        icon: ArrowLeftRight, 
+        bgColor: "bg-muted", 
+        borderColor: "border-border",
+        iconColor: "text-muted-foreground" 
+      };
     default:
-      return null;
-  }
-};
-
-const getActionStyle = (type: string) => {
-  switch (type) {
-    case "add":
-      return "bg-primary/10";
-    case "consume":
-      return "bg-warning/10";
-    case "return":
-      return "bg-primary/10";
-    case "borrow":
-      return "bg-muted";
-    default:
-      return "bg-muted";
+      return { 
+        icon: ArrowLeftRight, 
+        bgColor: "bg-muted", 
+        borderColor: "border-border",
+        iconColor: "text-muted-foreground" 
+      };
   }
 };
 
 const RecentActivityCard = () => {
   return (
-    <div className="bg-background border border-border rounded-lg p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <ArrowLeftRight className="h-4 w-4 text-primary" />
+    <div className="bg-card border-2 border-border p-6 shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 mb-4 border-b-2 border-border">
+        <div className="flex items-center gap-3">
+          <div className="icon-badge-primary">
+            <ArrowLeftRight className="h-5 w-5 text-primary" />
           </div>
-          <h3 className="font-semibold text-foreground">Recent Activity</h3>
+          <h3 className="section-title text-foreground">Recent Activity</h3>
         </div>
-        <button className="text-xs font-medium text-primary hover:underline">
-          View all
-        </button>
+        <Button variant="outline" size="sm" className="border-2 font-semibold text-xs uppercase tracking-wide">
+          View All
+        </Button>
       </div>
 
+      {/* Activity List */}
       <div className="space-y-3">
-        {activities.map((activity, index) => (
-          <div
-            key={index}
-            className="flex items-start gap-3 animate-fade-in"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className={cn("p-1.5 rounded-full mt-0.5", getActionStyle(activity.type))}>
-              {getActionIcon(activity.type)}
+        {activities.map((activity, index) => {
+          const config = getActionConfig(activity.type);
+          const Icon = config.icon;
+          
+          return (
+            <div
+              key={index}
+              className="flex items-start gap-4 p-3 border-2 border-border hover:shadow-xs transition-all animate-fade-in"
+              style={{ animationDelay: `${index * 80}ms` }}
+            >
+              <div className={cn(
+                "w-9 h-9 flex items-center justify-center border-2 shrink-0",
+                config.bgColor,
+                config.borderColor
+              )}>
+                <Icon className={cn("h-4 w-4", config.iconColor)} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-foreground leading-relaxed">
+                  <span className="font-bold">{activity.user}</span>{" "}
+                  <span className="text-muted-foreground">{activity.action}</span>{" "}
+                  <span className="font-semibold">{activity.item}</span>
+                  {activity.quantity && (
+                    <span className="text-muted-foreground font-medium">
+                      {" "}({activity.quantity}{activity.unit || ""})
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs font-semibold text-muted-foreground mt-1 uppercase tracking-wide">
+                  {activity.time}
+                </p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-foreground">
-                <span className="font-medium">{activity.user}</span>{" "}
-                <span className="text-muted-foreground">{activity.action}</span>{" "}
-                <span className="font-medium">{activity.item}</span>
-                {activity.quantity && (
-                  <span className="text-muted-foreground">
-                    {" "}({activity.quantity}{activity.unit || ""})
-                  </span>
-                )}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

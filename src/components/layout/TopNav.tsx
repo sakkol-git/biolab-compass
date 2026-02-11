@@ -1,6 +1,7 @@
-import { Bell, Search, User, Menu } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Bell, User, Menu, Package, Microscope, BarChart3, Search } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "@/components/ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,70 +10,156 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSidebarContext } from "./AppLayout";
+import { cn } from "@/lib/utils";
+
+const topSections = [
+  {
+    title: "Inventory",
+    url: "/inventory",
+    icon: Package,
+    matchPrefix: "/inventory",
+  },
+  {
+    title: "Research",
+    url: "/research",
+    icon: Microscope,
+    matchPrefix: "/research",
+  },
+  {
+    title: "Business",
+    url: "/business",
+    icon: BarChart3,
+    matchPrefix: "/business",
+  },
+];
 
 const TopNav = () => {
+  const { mobileOpen, setMobileOpen } = useSidebarContext();
+  const location = useLocation();
+
   return (
-    <header className="h-16 border-b-2 border-border bg-card flex items-center justify-between px-6 sticky top-0 z-50">
-      {/* Logo & System Name */}
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-primary border-2 border-border flex items-center justify-center shadow-xs">
-          <span className="text-primary-foreground font-bold text-sm tracking-tight">BL</span>
-        </div>
-        <div className="hidden sm:block">
-          <span className="font-bold text-foreground text-lg tracking-tight">Bio-Lab</span>
-          <span className="font-medium text-muted-foreground text-lg ml-1">Inventory</span>
-        </div>
-      </div>
-
-      {/* Global Search */}
-      <div className="flex-1 max-w-lg mx-8 hidden md:block">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search inventory, chemicals, equipment..."
-            className="pl-11 h-11 bg-background border-2 border-border focus:border-primary focus:shadow-xs transition-all"
-          />
-        </div>
-      </div>
-
-      {/* Right Actions */}
+    <header className="h-16 bg-card/90 backdrop-blur-md border-b border-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-50 shadow-md">
+      {/* Left: Logo + Hamburger */}
       <div className="flex items-center gap-3">
-        {/* Mobile Search */}
-        <Button variant="outline" size="icon" className="md:hidden border-2 h-10 w-10">
-          <Search className="h-4 w-4" />
+        {/* Mobile hamburger */}
+        <Button
+          variant="outline"
+          size="icon"
+          className="lg:hidden shrink-0"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={mobileOpen}
+        >
+          <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Notifications */}
-        <Button variant="outline" size="icon" className="relative border-2 h-10 w-10">
-          <Bell className="h-4 w-4" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive border-2 border-card text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-            3
-          </span>
-        </Button>
+        <NavLink to="/" className="flex items-center gap-2.5">
+          <img src="/favicon.svg" alt="BioLab Compass logo" className="w-9 h-9 rounded-lg object-contain shadow-sm" />
+          <div className="hidden sm:block">
+            <span className="font-semibold text-foreground text-base">Biolab</span>
+            <span className="font-normal text-muted-foreground text-base ml-1">Compass</span>
+          </div>
+        </NavLink>
+      </div>
 
-        {/* User Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-3 px-3 h-10 border-2 hover:shadow-xs transition-shadow">
-              <div className="w-7 h-7 bg-primary/10 border-2 border-primary/30 flex items-center justify-center">
-                <User className="h-4 w-4 text-primary" />
-              </div>
-              <div className="text-left hidden lg:block">
-                <p className="text-sm font-semibold text-foreground leading-tight">Dr. Sarah Chen</p>
-                <p className="text-xs text-muted-foreground leading-tight">Lab Manager</p>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 border-2 shadow-md">
-            <DropdownMenuLabel className="font-bold">My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="font-medium">Profile Settings</DropdownMenuItem>
-            <DropdownMenuItem className="font-medium">Preferences</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive font-semibold">Sign Out</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Right: Section Tabs + Actions */}
+      <div className="flex items-center gap-4">
+        {/* Desktop Section Tabs */}
+        <nav className="hidden md:flex items-center gap-1" aria-label="Main sections">
+          {topSections.map((section) => {
+            const isActive = location.pathname.startsWith(section.matchPrefix);
+            const Icon = section.icon;
+            return (
+              <NavLink
+                key={section.title}
+                to={section.url}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150",
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {section.title}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile Section Tabs */}
+          <div className="flex md:hidden items-center gap-1">
+            {topSections.map((section) => {
+              const isActive = location.pathname.startsWith(section.matchPrefix);
+              const Icon = section.icon;
+              return (
+                <NavLink
+                  key={section.title}
+                  to={section.url}
+                  className={cn(
+                    "flex items-center justify-center h-10 w-10 rounded-lg transition-colors duration-150",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "bg-transparent hover:bg-muted text-muted-foreground"
+                  )}
+                  aria-label={section.title}
+                >
+                  <Icon className="h-5 w-5" />
+                </NavLink>
+              );
+            })}
+          </div>
+
+          {/* Search / Command Palette */}
+          <Button
+            variant="outline"
+            className="hidden sm:inline-flex items-center gap-2 text-muted-foreground text-sm h-9 px-3 w-56 justify-start"
+            onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+          >
+            <Search className="h-4 w-4" />
+            <span>Search...</span>
+            <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              ⌘K
+            </kbd>
+          </Button>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
+          {/* Notifications */}
+          <Button variant="ghost" size="icon" className="relative" aria-label="Notifications — 3 unread">
+            <Bell className="h-5 w-5" />
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-semibold flex items-center justify-center rounded-full" aria-hidden="true">
+              3
+            </span>
+          </Button>
+
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2.5 px-2.5 h-10">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                <div className="text-left hidden lg:block">
+                  <p className="text-sm font-medium text-foreground leading-tight">Dr. Sarah Chen</p>
+                  <p className="text-xs text-muted-foreground leading-tight">Lab Manager</p>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
+              <DropdownMenuItem>Preferences</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive font-medium">Sign Out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

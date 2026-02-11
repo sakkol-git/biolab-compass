@@ -18,37 +18,37 @@ interface StatCardProps {
 const StatCard = ({ title, value, subtitle, icon, trend, className }: StatCardProps) => {
   return (
     <div className={cn(
-      "bg-card border-2 border-border p-5 shadow-sm hover:shadow-md hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-150",
+      "bg-card rounded-xl p-5 border border-border/60 shadow-md hover-lift transition-colors duration-150",
       className
     )}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2">
+          <p className="text-xs font-normal text-muted-foreground/70 mb-2 uppercase tracking-wider">
             {title}
           </p>
-          <p className="text-3xl font-bold text-foreground tracking-tight tabular-nums">
+          <p className="text-2xl font-medium text-foreground tabular-nums">
             {value}
           </p>
           {subtitle && (
-            <p className="text-sm text-muted-foreground mt-1 font-medium">{subtitle}</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">{subtitle}</p>
           )}
           {trend && (
             <div className={cn(
-              "inline-flex items-center gap-1 mt-3 px-2 py-1 text-xs font-bold border-2",
+              "inline-flex items-center gap-2 mt-3 px-2.5 py-1 text-xs font-medium rounded-lg",
               trend.positive 
-                ? "bg-primary/10 text-primary border-primary/30" 
-                : "bg-destructive/10 text-destructive border-destructive/30"
+                ? "bg-primary/10 text-primary" 
+                : "bg-destructive/10 text-destructive"
             )}>
               {trend.positive ? (
-                <TrendingUp className="h-3 w-3" />
+                <TrendingUp className="h-3.5 w-3.5" />
               ) : (
-                <TrendingDown className="h-3 w-3" />
+                <TrendingDown className="h-3.5 w-3.5" />
               )}
               {trend.positive ? "+" : "-"}{trend.value}% {trend.label}
             </div>
           )}
         </div>
-        <div className="icon-badge-primary shrink-0">
+        <div className="text-muted-foreground/50">
           {icon}
         </div>
       </div>

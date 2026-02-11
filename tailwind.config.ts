@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: [
-          'Space Grotesk',
+          'Inter',
           'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
@@ -84,9 +84,29 @@ export default {
         }
       },
       borderRadius: {
-        lg: '0px',
-        md: '0px',
-        sm: '0px'
+        none: '0',
+        sm: '4px',
+        DEFAULT: '8px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        '2xl': '20px',
+        full: '9999px',
+      },
+      fontSize: {
+        xs: ['12px', '18px'],
+        sm: ['13px', '20px'],
+        base: ['14px', '22px'],
+        lg: ['16px', '24px'],
+        xl: ['18px', '28px'],
+        '2xl': ['20px', '30px'],
+        '3xl': ['24px', '34px'],
+        '4xl': ['30px', '38px'],
+      },
+      letterSpacing: {
+        tighter: '-0.02em',
+        tight: '-0.01em',
+        normal: '0em',
       },
       boxShadow: {
         '2xs': 'var(--shadow-2xs)',

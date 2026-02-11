@@ -1,169 +1,160 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import '@fontsource/inter/400.css';
-@import '@fontsource/inter/500.css';
-@import '@fontsource/inter/600.css';
-@import '@fontsource/inter/700.css';
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
-
 /* ═══════════════════════════════════════════════════════════════════════════
-   NEO-BRUTALIST DESIGN SYSTEM — "Clinical Precision × Organic Growth"
+   DESIGN SYSTEM — "Professional Clarity"
    ═══════════════════════════════════════════════════════════════════════════
    
    DESIGN PRINCIPLES:
-   1. Bold borders, hard shadows — no soft edges
-   2. Generous white space — let content breathe
-   3. Strong typographic hierarchy — clear visual order
-   4. Color with purpose — green = action, not decoration
-   5. Consistency — every component follows the same rules
+   1. Readability first — generous sizing, strong contrast, clear hierarchy
+   2. Cards must be distinct from background — visible borders + subtle shadow
+   3. Single accent color — green for action, gray for structure
+   4. Comfortable density — enough space to breathe, not cramped
+   5. Strong text hierarchy — size + weight, never opacity dimming
    
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer base {
   :root {
-    /* ─────────────────────────────────────────────────────────────────────────
-       COLOR SYSTEM
-       ───────────────────────────────────────────────────────────────────────── */
+    /* ─── COLOR SYSTEM ──────────────────────────────────────── */
     
-    /* Primary Green — Growth, Action, Success */
-    --primary: 145 63% 32%;
+    /* Primary Green — Action only */
+    --primary: 152 65% 38%;
     --primary-foreground: 0 0% 100%;
     
-    /* Backgrounds — Clean, Clinical White */
-    --background: 60 9% 98%;
-    --foreground: 0 0% 9%;
+    /* Backgrounds — Light warm gray so cards stand out */
+    --background: 220 70% 99%;
+    --foreground: 220 13% 15%;
     
-    /* Cards — Subtle elevation */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    /* Cards — Soft off-white to contrast against gray background */
+    --card: 220 16% 97%;
+    --card-foreground: 220 13% 15%;
     
     /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover-foreground: 220 13% 15%;
     
-    /* Secondary — Muted actions */
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 0 0% 9%;
+    /* Secondary */
+    --secondary: 220 14% 91%;
+    --secondary-foreground: 220 13% 15%;
     
-    /* Muted — Subdued elements */
-    --muted: 210 20% 96%;
-    --muted-foreground: 0 0% 45%;
+    /* Muted — Visible gray for backgrounds & labels */
+    --muted: 220 14% 91%;
+    --muted-foreground: 220 9% 32%;
     
-    /* Accent — Teal complement */
-    --accent: 175 65% 35%;
+    /* Accent — Same as primary, used sparingly */
+    --accent: 152 65% 38%;
     --accent-foreground: 0 0% 100%;
     
-    /* Status Colors — Clear, immediate recognition */
-    --destructive: 0 72% 51%;
+    /* Status Colors */
+    --destructive: 0 84% 50%;
     --destructive-foreground: 0 0% 100%;
     
-    --warning: 38 92% 50%;
+    --warning: 35 95% 52%;
     --warning-foreground: 0 0% 9%;
     
-    --success: 145 63% 32%;
+    --success: 152 65% 38%;
     --success-foreground: 0 0% 100%;
     
-    /* UI Chrome */
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 145 63% 32%;
+    /* UI Chrome — Visible borders */
+    --border: 220 13% 70%;
+    --input: 220 13% 70%;
+    --ring: 152 65% 38%;
     
-    /* ─────────────────────────────────────────────────────────────────────────
-       SHAPE SYSTEM — Sharp, intentional
-       ───────────────────────────────────────────────────────────────────────── */
-    --radius: 0px;
+    /* ─── SHAPE ──────────────────────────────────────────────── */
+    --radius: 0.5rem;
+    --radius-lg: 0.75rem;
     
-    /* ─────────────────────────────────────────────────────────────────────────
-       SHADOW SYSTEM — Hard, graphic shadows
-       ───────────────────────────────────────────────────────────────────────── */
-    --shadow-2xs: 1px 1px 0px 0px hsl(0 0% 15%);
-    --shadow-xs: 2px 2px 0px 0px hsl(0 0% 15%);
-    --shadow-sm: 3px 3px 0px 0px hsl(0 0% 15%);
-    --shadow: 4px 4px 0px 0px hsl(0 0% 15%);
-    --shadow-md: 6px 6px 0px 0px hsl(0 0% 15%);
-    --shadow-lg: 8px 8px 0px 0px hsl(0 0% 15%);
-    --shadow-xl: 12px 12px 0px 0px hsl(0 0% 15%);
-    --shadow-2xl: 16px 16px 0px 0px hsl(0 0% 15%);
+    /* ─── SHADOWS — Subtle but visible card elevation ─────── */
+    --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+    --shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.1), 0 1px 4px -2px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 6px 14px -4px rgba(0, 0, 0, 0.1), 0 4px 8px -4px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 20px -4px rgba(0, 0, 0, 0.12), 0 4px 8px -4px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.18);
     
-    /* Interactive shadow (hover state) */
-    --shadow-hover: 6px 6px 0px 0px hsl(145 63% 32%);
+    /* Hover shadow */
+    --shadow-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.1), 0 2px 6px -2px rgba(0, 0, 0, 0.06);
     
-    /* ─────────────────────────────────────────────────────────────────────────
-       SIDEBAR
-       ───────────────────────────────────────────────────────────────────────── */
-    --sidebar-background: 60 9% 98%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 145 63% 32%;
+    /* ─── SIDEBAR ────────────────────────────────────────────── */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 13% 15%;
+    --sidebar-primary: 152 65% 38%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 145 63% 32%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 145 63% 32%;
+    --sidebar-accent: 220 14% 91%;
+    --sidebar-accent-foreground: 220 13% 15%;
+    --sidebar-border: 220 13% 81%;
+    --sidebar-ring: 152 65% 38%;
     
-    /* ─────────────────────────────────────────────────────────────────────────
-       CHART COLORS
-       ───────────────────────────────────────────────────────────────────────── */
-    --chart-1: 145 63% 32%;
-    --chart-2: 175 65% 35%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 0 72% 51%;
-    --chart-5: 210 20% 50%;
+    /* ─── CHART COLORS — Muted palette ───────────────────────── */
+    --chart-1: 152 65% 38%;
+    --chart-2: 199 68% 42%;
+    --chart-3: 35 95% 52%;
+    --chart-4: 0 84% 50%;
+    --chart-5: 220 20% 48%;
     
-    /* ─────────────────────────────────────────────────────────────────────────
-       TYPOGRAPHY
-       ───────────────────────────────────────────────────────────────────────── */
-    --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    /* ─── TYPOGRAPHY ─────────────────────────────────────────── */
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
     
-    --tracking-tight: -0.02em;
+    --font-size-base: 14px;
+    
+    --tracking-tight: -0.01em;
     --tracking-normal: 0em;
-    --tracking-wide: 0.025em;
+    --tracking-wide: 0.01em;
     
     --spacing: 0.25rem;
+    
+    /* ─── TRANSITIONS ───────────────────────────────────────── */
+    --transition-snap: cubic-bezier(0.25, 1, 0.5, 1);
+    --transition-duration: 150ms;
   }
 
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 95%;
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 145 60% 45%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 175 60% 40%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 65% 50%;
+    --background: 224 14% 8%;
+    --foreground: 210 20% 92%;
+    --card: 224 14% 12%;
+    --card-foreground: 210 20% 92%;
+    --popover: 224 14% 10%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 152 50% 48%;
+    --primary-foreground: 224 14% 8%;
+    --secondary: 224 14% 14%;
+    --secondary-foreground: 210 20% 92%;
+    --muted: 224 14% 14%;
+    --muted-foreground: 220 9% 55%;
+    --accent: 152 50% 48%;
+    --accent-foreground: 224 14% 8%;
+    --destructive: 0 62% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 85%;
-    --input: 0 0% 85%;
-    --ring: 145 60% 45%;
+    --border: 224 14% 22%;
+    --input: 224 14% 22%;
+    --ring: 152 50% 48%;
     
-    --shadow-2xs: 1px 1px 0px 0px hsl(0 0% 85%);
-    --shadow-xs: 2px 2px 0px 0px hsl(0 0% 85%);
-    --shadow-sm: 3px 3px 0px 0px hsl(0 0% 85%);
-    --shadow: 4px 4px 0px 0px hsl(0 0% 85%);
-    --shadow-md: 6px 6px 0px 0px hsl(0 0% 85%);
-    --shadow-lg: 8px 8px 0px 0px hsl(0 0% 85%);
-    --shadow-xl: 12px 12px 0px 0px hsl(0 0% 85%);
-    --shadow-2xl: 16px 16px 0px 0px hsl(0 0% 85%);
-    --shadow-hover: 6px 6px 0px 0px hsl(145 60% 45%);
+    --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+    --shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.3), 0 1px 4px -2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 20px -4px rgba(0, 0, 0, 0.3), 0 4px 8px -4px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    --shadow-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.3), 0 2px 6px -2px rgba(0, 0, 0, 0.2);
     
-    --sidebar-background: 0 0% 7%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 145 60% 45%;
-    --sidebar-primary-foreground: 0 0% 9%;
-    --sidebar-accent: 145 60% 45%;
-    --sidebar-accent-foreground: 0 0% 9%;
-    --sidebar-border: 0 0% 85%;
-    --sidebar-ring: 145 60% 45%;
+    --sidebar-background: 224 14% 8%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 152 50% 48%;
+    --sidebar-primary-foreground: 224 14% 8%;
+    --sidebar-accent: 224 14% 14%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 224 14% 18%;
+    --sidebar-ring: 152 50% 48%;
   }
 }
 
@@ -180,187 +171,179 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    letter-spacing: -0.01em;
+    font-size: var(--font-size-base);
+    letter-spacing: -0.006em;
+    font-weight: 400;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     TYPOGRAPHY SCALE
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Typography Scale — Clear hierarchy, readable sizes */
   
   h1 {
-    @apply text-3xl font-bold tracking-tight;
-    letter-spacing: -0.03em;
-  }
-  
-  h2 {
-    @apply text-2xl font-semibold tracking-tight;
+    @apply text-2xl font-semibold text-foreground;
     letter-spacing: -0.02em;
   }
   
+  h2 {
+    @apply text-xl font-semibold text-foreground;
+    letter-spacing: -0.015em;
+  }
+  
   h3 {
-    @apply text-lg font-semibold;
+    @apply text-lg font-medium text-foreground;
     letter-spacing: -0.01em;
   }
   
   h4 {
-    @apply text-base font-semibold;
+    @apply text-base font-medium text-foreground;
   }
 }
 
 @layer components {
-  /* ═══════════════════════════════════════════════════════════════════════════
-     BRUTALIST CARD SYSTEM
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Utility classes */
   
-  .brutalist-card {
-    @apply bg-card border-2 border-border p-6;
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow 0.15s ease-out, transform 0.15s ease-out;
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
   
-  .brutalist-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translate(-2px, -2px);
+  .clickable-row {
+    transition: all var(--transition-duration) var(--transition-snap);
   }
   
-  .brutalist-card-flat {
-    @apply bg-card border-2 border-border p-6;
+  .clickable-row:hover {
+    @apply bg-muted/50;
   }
   
-  .brutalist-card-accent {
-    @apply bg-card border-2 border-primary p-6;
-    box-shadow: var(--shadow-sm);
+  /* Card styles — Visible, elevated */
+  
+  .minimal-card {
+    @apply bg-card rounded-lg p-5 border border-border shadow-md;
+    transition: box-shadow var(--transition-duration) var(--transition-snap),
+                border-color var(--transition-duration) var(--transition-snap);
+  }
+  
+  .minimal-card:hover {
+    @apply shadow-lg border-border;
+  }
+  
+  .minimal-card-bordered {
+    @apply bg-card border border-border rounded-lg p-5 shadow-md;
+  }
+  
+  .minimal-card-accent {
+    @apply bg-card border border-border border-l-2 border-l-primary rounded-lg p-5 shadow-md;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     STATUS PILLS — Growth Stages
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Status Pills — Dot + text, or ultra-subtle pill */
   
   .status-pill {
-    @apply inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wide border-2;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-normal rounded-full bg-muted text-muted-foreground;
   }
 
   .status-seed {
-    @apply bg-secondary text-secondary-foreground border-border;
+    @apply bg-secondary text-secondary-foreground;
   }
 
   .status-seedling {
-    @apply bg-primary/15 text-primary border-primary/30;
+    @apply bg-emerald-50 text-emerald-600;
   }
 
   .status-growing {
-    @apply bg-primary text-primary-foreground border-primary;
+    @apply bg-emerald-50 text-emerald-600;
   }
 
   .status-harvested {
-    @apply bg-warning/15 text-warning border-warning/30;
+    @apply bg-amber-50 text-amber-600;
   }
 
   .status-failed {
-    @apply bg-destructive/15 text-destructive border-destructive/30;
+    @apply bg-red-50 text-red-600;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     HAZARD INDICATORS — Chemical Safety
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Hazard Indicators — Subtle left accent */
   
   .hazard-high {
-    @apply border-l-4 border-l-destructive bg-destructive/5;
+    @apply border-l-2 border-l-destructive;
   }
 
   .hazard-medium {
-    @apply border-l-4 border-l-warning bg-warning/5;
+    @apply border-l-2 border-l-warning;
   }
 
   .hazard-low {
-    @apply border-l-4 border-l-primary bg-primary/5;
+    @apply border-l-2 border-l-primary;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     DATA TABLES — Dense, readable
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Data Tables — Readable with visible structure */
   
   .data-table {
-    @apply w-full border-2 border-border;
+    @apply w-full overflow-hidden;
   }
   
   .data-table thead {
-    @apply bg-muted border-b-2 border-border;
+    @apply border-b border-border bg-muted/50;
   }
   
   .data-table th {
-    @apply px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-muted-foreground;
+    @apply px-4 py-3 text-left text-sm font-medium text-muted-foreground;
   }
   
   .data-table td {
-    @apply px-4 py-3 text-sm border-b border-border/50;
+    @apply px-4 py-3 text-sm;
   }
   
   .data-table tbody tr {
-    @apply transition-colors;
+    @apply transition-colors border-b border-border/50;
+  }
+  
+  .data-table tbody tr:last-child {
+    @apply border-b-0;
   }
   
   .data-table tbody tr:hover {
     @apply bg-muted/50;
   }
-  
-  .data-table tbody tr:nth-child(even) {
-    @apply bg-muted/30;
-  }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     ICON BADGES — Consistent icon containers
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Icon Containers — Clear, visible */
   
   .icon-badge {
-    @apply inline-flex items-center justify-center w-10 h-10 border-2 border-border bg-muted;
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-lg bg-muted text-muted-foreground;
   }
   
   .icon-badge-primary {
-    @apply inline-flex items-center justify-center w-10 h-10 border-2 border-primary bg-primary/10;
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary;
   }
   
   .icon-badge-destructive {
-    @apply inline-flex items-center justify-center w-10 h-10 border-2 border-destructive bg-destructive/10;
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-lg bg-destructive/10 text-destructive;
   }
   
   .icon-badge-warning {
-    @apply inline-flex items-center justify-center w-10 h-10 border-2 border-warning bg-warning/10;
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     BRUTALIST PROGRESS BARS
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Progress Bars — Visible */
   
-  .brutalist-progress {
-    @apply h-3 bg-muted border-2 border-border overflow-hidden;
+  .minimal-progress {
+    @apply h-2.5 bg-muted rounded-full overflow-hidden;
   }
   
-  .brutalist-progress-bar {
-    @apply h-full bg-primary transition-all duration-500;
+  .minimal-progress-bar {
+    @apply h-full bg-primary rounded-full transition-all duration-500;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     BRUTALIST INPUTS
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Inputs — Visible borders, readable text */
   
-  .brutalist-input {
-    @apply w-full px-4 py-3 bg-background border-2 border-border text-sm;
-    @apply focus:outline-none focus:border-primary focus:ring-0;
+  .minimal-input {
+    @apply w-full px-3 py-2.5 bg-card border border-border text-sm rounded-lg;
+    @apply focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20;
     @apply placeholder:text-muted-foreground;
-    transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
-  }
-  
-  .brutalist-input:focus {
-    box-shadow: var(--shadow-xs);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     ACTIVITY INDICATOR
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Activity Indicator — Simple dots */
   
   .activity-dot {
-    @apply w-2.5 h-2.5 border border-border;
+    @apply w-2 h-2 rounded-full;
   }
   
   .activity-dot-primary {
@@ -376,42 +359,493 @@
   }
   
   .activity-dot-muted {
-    @apply bg-muted-foreground/30;
+    @apply bg-muted-foreground/20;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     SECTION HEADERS
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Section Headers — Minimal */
   
   .section-header {
-    @apply flex items-center gap-3 pb-4 mb-4 border-b-2 border-border;
+    @apply flex items-center gap-2 pb-3 mb-4;
   }
   
   .section-title {
-    @apply text-base font-bold uppercase tracking-wide;
+    @apply text-sm font-medium text-foreground;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     BRUTALIST BADGE / TAG
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Badges — Ultra-light */
   
-  .brutalist-badge {
-    @apply inline-flex items-center px-2 py-0.5 text-xs font-bold uppercase tracking-wide border-2;
+  .minimal-badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-normal rounded-full;
   }
   
-  .brutalist-badge-primary {
-    @apply bg-primary text-primary-foreground border-primary;
+  .minimal-badge-primary {
+    @apply bg-primary/10 text-primary;
   }
   
-  .brutalist-badge-destructive {
-    @apply bg-destructive text-destructive-foreground border-destructive;
+  .minimal-badge-destructive {
+    @apply bg-destructive/10 text-destructive;
   }
   
-  .brutalist-badge-warning {
-    @apply bg-warning text-warning-foreground border-warning;
+  .minimal-badge-warning {
+    @apply bg-amber-500/10 text-amber-700;
   }
   
-  .brutalist-badge-muted {
-    @apply bg-muted text-muted-foreground border-border;
+  .minimal-badge-muted {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  /* Empty State */
+
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+
+  .empty-state-icon {
+    @apply mb-4 p-4 bg-muted rounded-xl;
+  }
+
+  .empty-state-title {
+    @apply text-base font-medium text-foreground mb-1;
+  }
+
+  .empty-state-description {
+    @apply text-sm text-muted-foreground max-w-sm;
+  }
+
+  /* Skip Link — Accessibility */
+
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100]
+           focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground
+           focus:font-medium focus:rounded-lg;
+  }
+
+  /* Breadcrumb */
+
+  .breadcrumb {
+    @apply flex items-center gap-1.5 text-sm;
+  }
+
+  .breadcrumb-item {
+    @apply text-muted-foreground hover:text-foreground transition-colors;
+  }
+
+  .breadcrumb-separator {
+    @apply text-muted-foreground select-none;
+  }
+
+  .breadcrumb-current {
+    @apply text-foreground font-medium;
   }
 }
+
+/* Focus-Visible — Accessibility */
+
+*:focus-visible {
+  outline: 2px solid hsl(152 56% 40%);
+  outline-offset: 2px;
+}
+
+.dark *:focus-visible {
+  outline-color: hsl(152 50% 48%);
+}
+
+/* Touch targets */
+@media (pointer: coarse) {
+  button:not([class*="w-"]),
+  a:not([class*="w-"]),
+  [role="button"]:not([class*="w-"]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM — Frosted glass card effects
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px 0 rgba(31, 38, 135, 0.1),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass-card {
+  background: rgba(15, 18, 30, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px) saturate(200%);
+  -webkit-backdrop-filter: blur(16px) saturate(200%);
+}
+
+.dark .glass-nav {
+  background: rgba(10, 12, 22, 0.85);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRADIENTS — Vibrant accents for buttons, progress bars, etc.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(152 65% 38%) 0%, hsl(160 70% 30%) 100%);
+}
+
+.gradient-success {
+  background: linear-gradient(135deg, hsl(152 58% 48%) 0%, hsl(152 65% 38%) 100%);
+}
+
+.gradient-warning {
+  background: linear-gradient(135deg, hsl(45 100% 60%) 0%, hsl(35 95% 52%) 100%);
+}
+
+.gradient-danger {
+  background: linear-gradient(135deg, hsl(0 72% 60%) 0%, hsl(0 84% 50%) 100%);
+}
+
+.gradient-info {
+  background: linear-gradient(135deg, hsl(199 68% 52%) 0%, hsl(199 68% 42%) 100%);
+}
+
+.gradient-subtle-green {
+  background: linear-gradient(135deg, hsl(152 50% 96%) 0%, hsl(152 50% 90%) 100%);
+}
+
+.dark .gradient-subtle-green {
+  background: linear-gradient(135deg, hsl(152 30% 12%) 0%, hsl(152 30% 16%) 100%);
+}
+
+.gradient-subtle-blue {
+  background: linear-gradient(135deg, hsl(199 50% 96%) 0%, hsl(199 50% 90%) 100%);
+}
+
+.dark .gradient-subtle-blue {
+  background: linear-gradient(135deg, hsl(199 30% 12%) 0%, hsl(199 30% 16%) 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MICRO-INTERACTIONS — Hover lifts, ripple, press, transitions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Hover lift — Cards that lift on hover */
+.hover-lift {
+  transition: transform 200ms cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 200ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Press effect — Scale down on active */
+.press-effect:active {
+  transform: scale(0.97);
+  transition: transform 80ms ease;
+}
+
+/* Smooth grow */
+.hover-grow {
+  transition: transform 200ms ease;
+}
+
+.hover-grow:hover {
+  transform: scale(1.02);
+}
+
+/* Glow effect on hover */
+.hover-glow:hover {
+  box-shadow: 0 0 20px 2px hsl(152 65% 38% / 0.2);
+}
+
+.dark .hover-glow:hover {
+  box-shadow: 0 0 20px 2px hsl(152 50% 48% / 0.15);
+}
+
+/* Shine effect — sweeping highlight */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+  transform: rotate(25deg);
+  transition: left 0.5s ease;
+}
+
+.shine-effect:hover::after {
+  left: 120%;
+}
+
+/* Button ripple */
+.ripple-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-button::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, hsl(0 0% 100% / 0.25) 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.4s, opacity 0.6s;
+}
+
+.ripple-button:active::after {
+  transform: scale(0, 0);
+  opacity: 0.4;
+  transition: 0s;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLL REVEAL — Animate elements when they enter the viewport
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes reveal-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.scroll-reveal {
+  animation: reveal-up 0.5s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+.scroll-reveal-scale {
+  animation: reveal-scale 0.4s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+.scroll-reveal-left {
+  animation: reveal-left 0.5s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+.scroll-reveal-right {
+  animation: reveal-right 0.5s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+/* Staggered reveal for child items */
+.stagger-children > * {
+  opacity: 0;
+  animation: reveal-up 0.4s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE TRANSITIONS — Smooth fade in/out for content
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: page-enter 0.3s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SKELETON LOADING — Shimmer animation for loading states
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.08) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRADIENT PROGRESS BARS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gradient-progress-bar {
+  background: linear-gradient(90deg, hsl(152 65% 45%), hsl(152 65% 38%), hsl(160 70% 30%));
+  background-size: 200% 100%;
+  animation: gradient-shift 2s ease infinite;
+  border-radius: 9999px;
+  height: 100%;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLOATING ACTION BUTTON — Mobile quick actions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes fab-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.fab-enter {
+  animation: fab-in 0.25s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+/* Pulse animation for notification badges */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.pulse-badge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: hsl(var(--destructive));
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOLTIP ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tooltip-bounce {
+  animation: tooltip-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tooltip-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK MODE SPECIFIC OVERRIDES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dark .status-seedling,
+.dark .status-growing {
+  background-color: hsl(152 30% 15%);
+  color: hsl(152 60% 65%);
+}
+
+.dark .status-harvested {
+  background-color: hsl(38 30% 15%);
+  color: hsl(38 80% 65%);
+}
+
+.dark .status-failed {
+  background-color: hsl(0 30% 15%);
+  color: hsl(0 70% 65%);
+}
+
+.dark .status-seed {
+  background-color: hsl(220 14% 14%);
+  color: hsl(220 10% 70%);
+}
+

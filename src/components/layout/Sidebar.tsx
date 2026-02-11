@@ -1,112 +1,131 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Leaf,
-  FlaskConical,
-  Wrench,
-  ArrowLeftRight,
-  Users,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Sidebar — Collapsible side navigation scoped to the active section.
+ *
+ * All state and route logic lives in useSidebar().
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+// ─── External ──────────────────────────────────────────────────────────────
+import { NavLink } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+// ─── Internal Components ───────────────────────────────────────────────────
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
-const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Plants", url: "/plants", icon: Leaf },
-  { title: "Chemicals", url: "/chemicals", icon: FlaskConical },
-  { title: "Equipment", url: "/equipment", icon: Wrench },
-  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight },
-  { title: "Users", url: "/users", icon: Users },
-];
+// ─── Hook ──────────────────────────────────────────────────────────────────
+import { useSidebar, type NavItem } from "./useSidebar";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MAIN COMPONENT
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
 const Sidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const location = useLocation();
+  const { collapsed, toggleCollapsed, navItems, sectionLabel, isActive } = useSidebar();
 
   return (
     <aside
       className={cn(
-        "h-[calc(100vh-4rem)] bg-card border-r-2 border-border transition-all duration-200 flex flex-col",
-        collapsed ? "w-[72px]" : "w-64"
+        "sticky top-16 h-[calc(100vh-4rem)] bg-card border-r border-border shadow-md transition-all duration-200 flex flex-col shrink-0",
+        collapsed ? "w-[72px]" : "w-60",
       )}
     >
-      {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
-        {navItems.map((item, index) => {
-          const isActive = location.pathname === item.url;
-          const Icon = item.icon;
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin" aria-label="Main navigation">
+        <SectionLabel label={sectionLabel} collapsed={collapsed} />
 
-          const linkContent = (
-            <NavLink
-              to={item.url}
-              className={cn(
-                "flex items-center gap-3 px-3 py-3 border-2 transition-all duration-150 group",
-                "animate-slide-in",
-                isActive
-                  ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                  : "bg-transparent border-transparent hover:border-border hover:bg-muted"
-              )}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <Icon
-                className={cn(
-                  "h-5 w-5 shrink-0 transition-transform group-hover:scale-110",
-                  isActive ? "text-primary-foreground" : "text-foreground"
-                )}
-              />
-              {!collapsed && (
-                <span className={cn(
-                  "text-sm font-semibold tracking-tight",
-                  isActive ? "text-primary-foreground" : "text-foreground"
-                )}>
-                  {item.title}
-                </span>
-              )}
-            </NavLink>
-          );
-
-          if (collapsed) {
-            return (
-              <Tooltip key={item.title} delayDuration={0}>
-                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                <TooltipContent side="right" className="font-semibold border-2 shadow-sm">
-                  {item.title}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          return <div key={item.title}>{linkContent}</div>;
-        })}
+        {navItems.map((item) => (
+          <SidebarLink
+            key={item.title}
+            item={item}
+            active={isActive(item)}
+            collapsed={collapsed}
+          />
+        ))}
       </nav>
 
-      {/* Collapse Toggle */}
-      <div className="p-3 border-t-2 border-border">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn(
-            "w-full justify-center border-2 font-semibold hover:shadow-xs transition-shadow",
-            !collapsed && "justify-start"
-          )}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <>
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              <span className="text-xs uppercase tracking-wide">Collapse</span>
-            </>
-          )}
-        </Button>
-      </div>
+      <CollapseToggle collapsed={collapsed} onToggle={toggleCollapsed} />
     </aside>
   );
 };
 
 export default Sidebar;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SUB-COMPONENTS
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Section Label ─────────────────────────────────────────────────────── */
+
+const SectionLabel = ({ label, collapsed }: { label: string; collapsed: boolean }) => {
+  if (collapsed) return null;
+
+  return (
+    <div className="px-3 py-2 mb-1">
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        {label}
+      </span>
+    </div>
+  );
+};
+
+/* ─── Sidebar Link ──────────────────────────────────────────────────────── */
+
+const SidebarLink = ({ item, active, collapsed }: {
+  item: NavItem;
+  active: boolean;
+  collapsed: boolean;
+}) => {
+  const Icon = item.icon;
+
+  const link = (
+    <NavLink
+      to={item.url}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 group",
+        active
+          ? "bg-primary/10 text-primary font-medium"
+          : "bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <Icon
+        className={cn("h-5 w-5 shrink-0", active ? "text-primary" : "text-muted-foreground")}
+        aria-hidden="true"
+      />
+      {!collapsed && (
+        <span className={cn("text-sm", active ? "font-medium text-primary" : "font-normal text-muted-foreground")}>
+          {item.title}
+        </span>
+      )}
+    </NavLink>
+  );
+
+  if (collapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent side="right">{item.title}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return <div>{link}</div>;
+};
+
+/* ─── Collapse Toggle ───────────────────────────────────────────────────── */
+
+const CollapseToggle = ({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) => (
+  <div className="p-3 border-t border-border/40">
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onToggle}
+      aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      className={cn("w-full justify-center text-sm", !collapsed && "justify-start")}
+    >
+      {collapsed
+        ? <ChevronRight className="h-4 w-4" />
+        : <><ChevronLeft className="h-4 w-4 mr-2" /><span>Collapse</span></>}
+    </Button>
+  </div>
+);

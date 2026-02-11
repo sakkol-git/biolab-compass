@@ -15,12 +15,10 @@ const PlantHealthCard = () => {
   ];
 
   return (
-    <div className="bg-card border-2 border-border p-6 shadow-sm">
+    <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
       {/* Header */}
       <div className="section-header">
-        <div className="icon-badge-primary">
-          <Leaf className="h-5 w-5 text-primary" />
-        </div>
+        <Leaf className="h-5 w-5 text-muted-foreground" />
         <h3 className="section-title text-foreground">Plant Inventory Health</h3>
       </div>
 
@@ -51,8 +49,8 @@ const PlantHealthCard = () => {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold text-foreground tabular-nums">{healthPercentage}%</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Health</span>
+            <span className="text-3xl font-medium text-foreground tabular-nums">{healthPercentage}%</span>
+            <span className="text-xs font-medium text-muted-foreground tracking-wide">Health</span>
           </div>
         </div>
 
@@ -61,13 +59,13 @@ const PlantHealthCard = () => {
           {stats.map((stat) => (
             <div 
               key={stat.label}
-              className="border-2 border-border p-3 text-center hover:shadow-xs transition-shadow"
+              className="rounded-xl p-3 text-center hover:bg-muted/40 transition-colors"
             >
-              <div className={`w-3 h-3 ${stat.color} border border-border mx-auto mb-2`} />
-              <p className={`text-xl font-bold tabular-nums ${stat.textColor}`}>
+              <div className={`w-3 h-3 ${stat.color} rounded-full mx-auto mb-2`} />
+              <p className={`text-xl font-medium tabular-nums ${stat.textColor}`}>
                 {stat.value.toLocaleString()}
               </p>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-1">
+              <p className="text-xs font-medium text-muted-foreground tracking-wide mt-1">
                 {stat.label}
               </p>
             </div>

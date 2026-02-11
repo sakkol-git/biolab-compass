@@ -62,12 +62,41 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Deploy to Vercel (Recommended)
 
-## Can I connect a custom domain to my Lovable project?
+1. **Fork/Clone this repository** (if you haven't already)
 
-Yes, you can!
+2. **Connect to Vercel:**
+   - Go to [Vercel](https://vercel.com)
+   - Click "Add New Project"
+   - Import your Git repository
+   - Vercel will auto-detect the Vite framework
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+3. **Configure build settings** (should be auto-detected):
+   - Framework Preset: `Vite`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm install`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+4. **Add environment variables** (if needed):
+   - In Vercel dashboard, go to Settings → Environment Variables
+   - Add any required `VITE_*` prefixed variables
+   - See `.env.example` for reference
+
+5. **Deploy:**
+   - Click "Deploy"
+   - Your app will be live in minutes!
+
+### Deploy to Lovable
+
+Alternatively, you can open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share → Publish.
+
+### Custom Domain
+
+You can connect a custom domain to your Vercel deployment:
+- In Vercel dashboard, go to Project Settings → Domains
+- Add your custom domain and follow the DNS configuration instructions
+
+For Lovable deployments, navigate to Project → Settings → Domains and click Connect Domain.
+
+Read more: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

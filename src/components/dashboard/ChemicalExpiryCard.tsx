@@ -9,16 +9,14 @@ const expiringChemicals = [
 
 const ChemicalExpiryCard = () => {
   return (
-    <div className="bg-card border-2 border-border p-6 shadow-sm">
+    <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 mb-4 border-b-2 border-border">
+      <div className="flex items-center justify-between pb-4 mb-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="icon-badge-destructive">
-            <FlaskConical className="h-5 w-5 text-destructive" />
-          </div>
+          <FlaskConical className="h-5 w-5 text-destructive" />
           <h3 className="section-title text-foreground">Chemical Expiry Alerts</h3>
         </div>
-        <span className="brutalist-badge-destructive">
+        <span className="minimal-badge-destructive">
           {expiringChemicals.length} items
         </span>
       </div>
@@ -29,16 +27,16 @@ const ChemicalExpiryCard = () => {
           <div
             key={index}
             className={cn(
-              "flex items-center justify-between p-4 border-2 border-border transition-all hover:shadow-xs",
+              "flex items-center justify-between p-4 rounded-xl transition-all hover:bg-muted/40",
               chemical.hazard === "high" ? "hazard-high" : "hazard-low"
             )}
           >
             <div className="flex items-center gap-4">
               <div className={cn(
-                "w-10 h-10 flex items-center justify-center border-2",
+                "w-10 h-10 flex items-center justify-center rounded-xl",
                 chemical.daysLeft <= 7 
-                  ? "bg-destructive/10 border-destructive" 
-                  : "bg-warning/10 border-warning"
+                  ? "bg-muted" 
+                  : "bg-muted"
               )}>
                 <AlertTriangle className={cn(
                   "h-5 w-5",
@@ -46,14 +44,14 @@ const ChemicalExpiryCard = () => {
                 )} />
               </div>
               <div>
-                <p className="font-semibold text-foreground">{chemical.name}</p>
+                <p className="font-medium text-foreground">{chemical.name}</p>
                 <p className="text-sm text-muted-foreground font-medium">{chemical.quantity}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm font-semibold text-foreground">{chemical.expiry}</p>
+              <p className="text-sm font-medium text-foreground">{chemical.expiry}</p>
               <p className={cn(
-                "text-xs font-bold uppercase tracking-wide",
+                "text-xs font-medium",
                 chemical.daysLeft <= 7 ? "text-destructive" : "text-warning"
               )}>
                 {chemical.daysLeft} days left

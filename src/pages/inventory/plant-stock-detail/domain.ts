@@ -1,13 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT BATCH DETAIL — Pure Domain Logic (Phase 3.1 — Functional Core)
+// PLANT STOCK DETAIL — Pure Domain Logic (Phase 3.1 — Functional Core)
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // Zero React. Zero hooks. Zero side effects.
 // Pure functions for stage/status styling and action building.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { Leaf, Pencil } from "lucide-react";
 import type { ActionButton } from "./types";
-import { Pencil, Leaf } from "lucide-react";
 
 // ─── Stage Colors ────────────────────────────────────────────────────────
 
@@ -66,7 +66,7 @@ export function buildActions(speciesId: string): ActionButton[] {
       icon: Pencil,
       variant: "outline",
       className: "gap-2 border font-medium",
-      ariaLabel: "Edit batch",
+      ariaLabel: "Edit stock entry",
     },
     {
       label: "View Species",

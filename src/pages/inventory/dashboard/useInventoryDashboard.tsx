@@ -9,16 +9,16 @@
 // data structure consumed by the rendering engine.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useMemo } from "react";
 import {
-  Leaf,
-  FlaskConical,
-  Wrench,
-  ArrowLeftRight,
-  LayoutGrid,
-  BarChart3,
-  Lightbulb,
+    ArrowLeftRight,
+    BarChart3,
+    FlaskConical,
+    LayoutGrid,
+    Leaf,
+    Lightbulb,
+    Wrench,
 } from "lucide-react";
+import { useMemo } from "react";
 import type { InventoryDashboardConfig, KpiStat } from "./types";
 
 // ─── Pure Helpers ──────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ function buildDateLabel(): string {
 function buildKpiStats(): KpiStat[] {
   return [
     {
-      title: "Plant Batches",
+      title: "Plant Stock",
       value: "1,247",
       subtitle: "Across 7 species",
       icon: <Leaf className="h-5 w-5 text-primary" />,
@@ -82,13 +82,12 @@ export function useInventoryDashboard(): UseInventoryDashboardResult {
       header: {
         icon: LayoutGrid,
         title: "Inventory Dashboard",
-        subtitle: "Monitor plant batches, chemicals, equipment, and lab transactions.",
+        subtitle:
+          "Monitor plant stock, chemicals, equipment, and lab transactions.",
         dateLabel,
       },
 
-      globalWidgets: [
-        { type: "kpi-row", stats: kpiStats },
-      ],
+      globalWidgets: [{ type: "kpi-row", stats: kpiStats }],
 
       tabs: [
         // ─── Overview Tab ────────────────────────────────

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT BATCH DETAIL — Domain Types & Configuration Contracts (Phase 1)
+// PLANT STOCK DETAIL — Domain Types & Configuration Contracts (Phase 1)
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // Mirrors the Equipment/Species type architecture exactly:
@@ -9,23 +9,21 @@
 // - Registry contract enforced via `satisfies`
 // ═══════════════════════════════════════════════════════════════════════════
 
-import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 export type {
-  KpiStat,
-  InfoField,
-  ActionButton,
-  DetailHeaderConfig,
-  HeroImageConfig,
+    ActionButton,
+    DetailHeaderConfig,
+    HeroImageConfig, InfoField, KpiStat
 } from "@/components/detail/detail-types";
 
 import type {
-  KpiStat,
-  InfoField,
-  ActionButton,
-  DetailHeaderConfig,
-  HeroImageConfig,
+    ActionButton,
+    DetailHeaderConfig,
+    HeroImageConfig,
+    InfoField,
+    KpiStat,
 } from "@/components/detail/detail-types";
 
 // ─── Domain-Specific Data Shapes ─────────────────────────────────────────
@@ -101,7 +99,7 @@ export type DetailSection =
 
 // ─── Page-Level Configuration ────────────────────────────────────────────
 
-export interface BatchPageConfig {
+export interface StockPageConfig {
   header: DetailHeaderConfig;
   heroImage: HeroImageConfig | null;
   kpiStrip: KpiStat[];

@@ -6,21 +6,21 @@
 // Returns a domain-ready view model — never raw API responses.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useMemo } from "react";
-import { useParams } from "react-router-dom";
-import {
-  Leaf,
-  Sprout,
-  Clock,
-  Ruler,
-  Layers,
-  Flower2,
-  Droplets,
-  Tag,
-} from "lucide-react";
 import { speciesDetailData, type SpeciesDetail } from "@/data/mockDetailData";
-import type { SpeciesPageConfig } from "./types";
+import {
+    Clock,
+    Droplets,
+    Flower2,
+    Layers,
+    Leaf,
+    Ruler,
+    Sprout,
+    Tag,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 import { SPECIES_ICON_COLOR, buildActions } from "./domain";
+import type { SpeciesPageConfig } from "./types";
 
 // ─── Return Type ─────────────────────────────────────────────────────────
 
@@ -94,10 +94,10 @@ function assembleConfig(data: SpeciesDetail): SpeciesPageConfig {
       },
       {
         kind: "associated-batches",
-        title: "Associated Batches",
+        title: "Current Stock",
         icon: Sprout,
         batches: data.associatedBatches,
-        viewAllHref: `/plant-batches?species=${encodeURIComponent(data.scientificName)}`,
+        viewAllHref: `/plant-stock?species=${encodeURIComponent(data.scientificName)}`,
       },
     ],
 
@@ -148,10 +148,7 @@ export function useSpeciesDetail(): UseSpeciesDetailResult {
     return () => clearTimeout(timer);
   }, [id]);
 
-  const config = useMemo(
-    () => (data ? assembleConfig(data) : null),
-    [data]
-  );
+  const config = useMemo(() => (data ? assembleConfig(data) : null), [data]);
 
   if (loading) return { state: "loading", id, config: null };
   if (notFound || !data) return { state: "not-found", id, config: null };

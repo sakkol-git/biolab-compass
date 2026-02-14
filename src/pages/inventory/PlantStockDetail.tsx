@@ -1,40 +1,40 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT BATCH DETAIL PAGE — Composition Root
+// PLANT STOCK DETAIL PAGE — Composition Root
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // Thin shell: hook → config → renderer.
 // Zero business logic. Zero layout. Zero formatting.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import AppLayout from "@/components/layout/AppLayout";
 import {
-  DetailSkeleton,
-  DetailNotFound,
+    DetailNotFound,
+    DetailSkeleton,
 } from "@/components/detail/DetailPageShell";
-import BatchDetailRenderer from "./plant-batch-detail/BatchDetailRenderer";
-import { useBatchDetail } from "./plant-batch-detail/useBatchDetail";
+import AppLayout from "@/components/layout/AppLayout";
+import StockDetailRenderer from "./plant-stock-detail/StockDetailRenderer";
+import { useStockDetail } from "./plant-stock-detail/useStockDetail";
 
-const PlantBatchDetailPage = () => {
-  const { state, id, config } = useBatchDetail();
+const PlantStockDetailPage = () => {
+  const { state, id, config } = useStockDetail();
 
   if (state === "loading") return <DetailSkeleton />;
 
   if (state === "not-found" || !config) {
     return (
       <DetailNotFound
-        category="Plant Batch"
+        category="Plant Stock"
         id={id}
-        backTo="/inventory/plant-batches"
-        backLabel="All Batches"
+        backTo="/inventory/plant-stock"
+        backLabel="All Stock"
       />
     );
   }
 
   return (
     <AppLayout>
-      <BatchDetailRenderer config={config} />
+      <StockDetailRenderer config={config} />
     </AppLayout>
   );
 };
 
-export default PlantBatchDetailPage;
+export default PlantStockDetailPage;

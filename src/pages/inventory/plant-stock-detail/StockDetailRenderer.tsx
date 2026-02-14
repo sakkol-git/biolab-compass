@@ -1,17 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT BATCH DETAIL — Stateless Rendering Engine
+// PLANT STOCK DETAIL — Stateless Rendering Engine
 // ═══════════════════════════════════════════════════════════════════════════
 
 import {
-  DetailLayout,
-  createSectionDispatch,
+    DetailLayout,
+    createSectionDispatch,
 } from "@/components/detail/DetailLayout";
 import { sectionRegistry } from "./sectionRegistry";
-import type { BatchPageConfig, DetailSection } from "./types";
+import type { DetailSection, StockPageConfig } from "./types";
 
 const renderSection = createSectionDispatch<DetailSection>(sectionRegistry);
 
-const BatchDetailRenderer = ({ config }: { config: BatchPageConfig }) => (
+const StockDetailRenderer = ({ config }: { config: StockPageConfig }) => (
   <DetailLayout<DetailSection>
     header={config.header}
     actions={config.actions}
@@ -23,4 +23,4 @@ const BatchDetailRenderer = ({ config }: { config: BatchPageConfig }) => (
   />
 );
 
-export default BatchDetailRenderer;
+export default StockDetailRenderer;

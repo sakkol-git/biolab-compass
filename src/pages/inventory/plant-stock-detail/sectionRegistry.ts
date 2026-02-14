@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT BATCH DETAIL — Compile-Time Component Registry (Phase 2)
+// PLANT STOCK DETAIL — Compile-Time Component Registry (Phase 2)
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // `satisfies SectionRendererMap` guarantees:
@@ -11,9 +11,9 @@
 import type { SectionRendererMap } from "./types";
 
 import BatchInfoSectionRenderer from "./sections/BatchInfoSectionRenderer";
-import HealthScoreSectionRenderer from "./sections/HealthScoreSectionRenderer";
-import GrowthMilestonesSectionRenderer from "./sections/GrowthMilestonesSectionRenderer";
 import EnvironmentalLogSectionRenderer from "./sections/EnvironmentalLogSectionRenderer";
+import GrowthMilestonesSectionRenderer from "./sections/GrowthMilestonesSectionRenderer";
+import HealthScoreSectionRenderer from "./sections/HealthScoreSectionRenderer";
 import ParentSpeciesSectionRenderer from "./sections/ParentSpeciesSectionRenderer";
 import QuickInfoSectionRenderer from "./sections/QuickInfoSectionRenderer";
 

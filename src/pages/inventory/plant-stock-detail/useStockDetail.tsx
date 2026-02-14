@@ -1,56 +1,56 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT BATCH DETAIL — Typed Custom Hook (Phase 3.2 — Imperative Shell)
+// PLANT STOCK DETAIL — Typed Custom Hook (Phase 3.2 — Imperative Shell)
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // Owns data fetching, loading state, and config assembly.
 // Returns a domain-ready view model — never raw API responses.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
+import { batchDetailData, type BatchDetail } from "@/data/mockDetailData";
+import { cn } from "@/lib/utils";
+import {
+    Activity,
+    Clock,
+    HeartPulse,
+    Leaf,
+    MapPin,
+    Milestone,
+    Sprout,
+    Thermometer,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
-  Sprout,
-  Leaf,
-  HeartPulse,
-  MapPin,
-  Activity,
-  Milestone,
-  Thermometer,
-  Clock,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { batchDetailData, type BatchDetail } from "@/data/mockDetailData";
-import type { BatchPageConfig } from "./types";
-import {
-  stageColor,
-  statusBadgeClass,
-  healthDescription,
-  healthScoreColor,
-  buildActions,
+    buildActions,
+    healthDescription,
+    healthScoreColor,
+    stageColor,
+    statusBadgeClass,
 } from "./domain";
+import type { StockPageConfig } from "./types";
 
 // ─── Return Type ─────────────────────────────────────────────────────────
 
-interface UseBatchDetailResult {
+interface UseStockDetailResult {
   state: "loading" | "not-found" | "ready";
   id: string | undefined;
-  config: BatchPageConfig | null;
+  config: StockPageConfig | null;
 }
 
-// ─── Config Assembly (pure transform) ────────────────────────────────────
+// ─── Config Assembly (pure transform) ──────────────────────────────────────
 
-function assembleConfig(data: BatchDetail): BatchPageConfig {
+function assembleConfig(data: BatchDetail): StockPageConfig {
   const color = stageColor(data.stage);
   const badgeClass = statusBadgeClass(data.status);
 
   return {
     header: {
-      backTo: "/inventory/plant-batches",
-      backLabel: "All Batches",
+      backTo: "/inventory/plant-stock",
+      backLabel: "All Stock",
       icon: Sprout,
       iconColor: color,
-      title: `${data.commonName} Batch`,
+      title: `${data.commonName} Stock`,
       subtitle: `${data.species} — ${data.stage}`,
       id: data.id,
     },
@@ -91,7 +91,7 @@ function assembleConfig(data: BatchDetail): BatchPageConfig {
     mainSections: [
       {
         kind: "batch-info",
-        title: "Batch Information",
+        title: "Stock Information",
         icon: Sprout,
         fields: [
           {
@@ -101,7 +101,11 @@ function assembleConfig(data: BatchDetail): BatchPageConfig {
           { label: "Common Name", value: data.commonName },
           { label: "Source Material", value: data.sourceMaterial },
           { label: "Sowing Date", value: data.startDate, mono: true },
-          { label: "Expected Harvest", value: data.expectedHarvestDate, mono: true },
+          {
+            label: "Expected Harvest",
+            value: data.expectedHarvestDate,
+            mono: true,
+          },
           { label: "Assigned To", value: data.assignedTo },
         ],
         statusBadge: (
@@ -144,7 +148,7 @@ function assembleConfig(data: BatchDetail): BatchPageConfig {
         title: "Quick Info",
         icon: Clock,
         fields: [
-          { label: "Batch ID", value: data.id, mono: true },
+          { label: "Stock ID", value: data.id, mono: true },
           { label: "Created", value: data.startDate, mono: true },
           { label: "Assigned To", value: data.assignedTo },
           { label: "Location", value: data.location },
@@ -156,7 +160,7 @@ function assembleConfig(data: BatchDetail): BatchPageConfig {
 
 // ─── Hook ────────────────────────────────────────────────────────────────
 
-export function useBatchDetail(): UseBatchDetailResult {
+export function useStockDetail(): UseStockDetailResult {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<BatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -178,10 +182,7 @@ export function useBatchDetail(): UseBatchDetailResult {
     return () => clearTimeout(timer);
   }, [id]);
 
-  const config = useMemo(
-    () => (data ? assembleConfig(data) : null),
-    [data]
-  );
+  const config = useMemo(() => (data ? assembleConfig(data) : null), [data]);
 
   if (loading) return { state: "loading", id, config: null };
   if (notFound || !data) return { state: "not-found", id, config: null };

@@ -6,8 +6,8 @@
 // Pure functions that transform raw SpeciesDetail into domain-ready shapes.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import type { ActionButton } from "./types";
 import { Pencil, Sprout } from "lucide-react";
+import type { ActionButton } from "./types";
 
 // ─── Constants ───────────────────────────────────────────────────────────
 
@@ -25,12 +25,12 @@ export function buildActions(scientificName: string): ActionButton[] {
       ariaLabel: "Edit species",
     },
     {
-      label: "View Batches",
+      label: "View Stock",
       icon: Sprout,
       variant: "default",
       className: "gap-2 font-medium border",
-      ariaLabel: "View batches for this species",
-      href: `/plant-batches?species=${encodeURIComponent(scientificName)}`,
+      ariaLabel: "View stock for this species",
+      href: `/plant-stock?species=${encodeURIComponent(scientificName)}`,
     },
   ];
 }

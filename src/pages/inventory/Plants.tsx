@@ -1,33 +1,88 @@
-import { useState } from "react";
-import { Plus, Search, Filter, Leaf } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { Leaf, Plus, Search } from "lucide-react";
+import { useState } from "react";
 
 const plantData = [
-  { id: "PB-001", species: "Solanum lycopersicum", commonName: "Tomato", stage: "Growing", quantity: 150, location: "Greenhouse A", status: "Healthy" },
-  { id: "PB-002", species: "Arabidopsis thaliana", commonName: "Thale Cress", stage: "Seedling", quantity: 300, location: "Growth Chamber 1", status: "Healthy" },
-  { id: "PB-003", species: "Zea mays", commonName: "Maize", stage: "Seed", quantity: 500, location: "Cold Storage", status: "Dormant" },
-  { id: "PB-004", species: "Oryza sativa", commonName: "Rice", stage: "Growing", quantity: 200, location: "Greenhouse B", status: "Healthy" },
-  { id: "PB-005", species: "Nicotiana tabacum", commonName: "Tobacco", stage: "Harvested", quantity: 45, location: "Drying Room", status: "Processed" },
-  { id: "PB-006", species: "Glycine max", commonName: "Soybean", stage: "Failed", quantity: 0, location: "Greenhouse A", status: "Failed" },
-  { id: "PB-007", species: "Triticum aestivum", commonName: "Wheat", stage: "Seedling", quantity: 400, location: "Field Plot 1", status: "Healthy" },
+  {
+    id: "PB-001",
+    species: "Solanum lycopersicum",
+    commonName: "Tomato",
+    stage: "Growing",
+    quantity: 150,
+    location: "Greenhouse A",
+    status: "Healthy",
+  },
+  {
+    id: "PB-002",
+    species: "Arabidopsis thaliana",
+    commonName: "Thale Cress",
+    stage: "Seedling",
+    quantity: 300,
+    location: "Growth Chamber 1",
+    status: "Healthy",
+  },
+  {
+    id: "PB-003",
+    species: "Zea mays",
+    commonName: "Maize",
+    stage: "Seed",
+    quantity: 500,
+    location: "Cold Storage",
+    status: "Dormant",
+  },
+  {
+    id: "PB-004",
+    species: "Oryza sativa",
+    commonName: "Rice",
+    stage: "Growing",
+    quantity: 200,
+    location: "Greenhouse B",
+    status: "Healthy",
+  },
+  {
+    id: "PB-005",
+    species: "Nicotiana tabacum",
+    commonName: "Tobacco",
+    stage: "Harvested",
+    quantity: 45,
+    location: "Drying Room",
+    status: "Processed",
+  },
+  {
+    id: "PB-006",
+    species: "Glycine max",
+    commonName: "Soybean",
+    stage: "Failed",
+    quantity: 0,
+    location: "Greenhouse A",
+    status: "Failed",
+  },
+  {
+    id: "PB-007",
+    species: "Triticum aestivum",
+    commonName: "Wheat",
+    stage: "Seedling",
+    quantity: 400,
+    location: "Field Plot 1",
+    status: "Healthy",
+  },
 ];
 
 const getStageStyle = (stage: string) => {
@@ -54,7 +109,7 @@ const Plants = () => {
     (plant) =>
       plant.species.toLowerCase().includes(searchQuery.toLowerCase()) ||
       plant.commonName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plant.id.toLowerCase().includes(searchQuery.toLowerCase())
+      plant.id.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -67,15 +122,17 @@ const Plants = () => {
               <Leaf className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-medium text-foreground">Plant Inventory</h1>
+              <h1 className="text-2xl font-medium text-foreground">
+                Plant Inventory
+              </h1>
               <p className="text-sm text-muted-foreground">
-                Manage plant batches and growth tracking
+                Manage plant stock and growth tracking
               </p>
             </div>
           </div>
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Plant Batch
+            Add Plant Stock
           </Button>
         </div>
 
@@ -125,7 +182,9 @@ const Plants = () => {
                 <TableHead className="font-medium">Batch ID</TableHead>
                 <TableHead className="font-medium">Species</TableHead>
                 <TableHead className="font-medium">Growth Stage</TableHead>
-                <TableHead className="font-medium text-right">Quantity</TableHead>
+                <TableHead className="font-medium text-right">
+                  Quantity
+                </TableHead>
                 <TableHead className="font-medium">Location</TableHead>
                 <TableHead className="font-medium">Status</TableHead>
               </TableRow>
@@ -133,21 +192,33 @@ const Plants = () => {
             <TableBody>
               {filteredPlants.map((plant) => (
                 <TableRow key={plant.id} className="cursor-pointer">
-                  <TableCell className="font-medium text-primary">{plant.id}</TableCell>
+                  <TableCell className="font-medium text-primary">
+                    {plant.id}
+                  </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium text-foreground">{plant.commonName}</p>
-                      <p className="text-xs text-muted-foreground italic">{plant.species}</p>
+                      <p className="font-medium text-foreground">
+                        {plant.commonName}
+                      </p>
+                      <p className="text-xs text-muted-foreground italic">
+                        {plant.species}
+                      </p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className={getStageStyle(plant.stage)}>{plant.stage}</span>
+                    <span className={getStageStyle(plant.stage)}>
+                      {plant.stage}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums">
                     {plant.quantity.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{plant.location}</TableCell>
-                  <TableCell className="text-muted-foreground">{plant.status}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {plant.location}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {plant.status}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -156,7 +227,9 @@ const Plants = () => {
 
         {/* Footer Info */}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <p>Showing {filteredPlants.length} of {plantData.length} batches</p>
+          <p>
+            Showing {filteredPlants.length} of {plantData.length} batches
+          </p>
         </div>
       </div>
     </AppLayout>

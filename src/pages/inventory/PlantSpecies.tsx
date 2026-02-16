@@ -13,7 +13,7 @@ import {
     Plus,
     Ruler,
     Sprout,
-    Thermometer
+    Thermometer,
 } from "lucide-react";
 
 // ─── Internal Components ───────────────────────────────────────────────────

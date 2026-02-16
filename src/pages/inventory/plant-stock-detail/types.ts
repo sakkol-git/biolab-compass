@@ -15,7 +15,9 @@ import type { ReactNode } from "react";
 export type {
     ActionButton,
     DetailHeaderConfig,
-    HeroImageConfig, InfoField, KpiStat
+    HeroImageConfig,
+    InfoField,
+    KpiStat
 } from "@/components/detail/detail-types";
 
 import type {
@@ -59,18 +61,45 @@ export interface HealthScoreSection {
   description: string;
 }
 
-export interface GrowthMilestonesSection {
-  readonly kind: "growth-milestones";
-  title: string;
-  icon: LucideIcon;
-  milestones: GrowthMilestone[];
-}
-
 export interface EnvironmentalLogSection {
   readonly kind: "environmental-log";
   title: string;
   icon: LucideIcon;
   readings: EnvironmentalReading[];
+}
+
+export interface RelatedVarietyItem {
+  id: string;
+  name: string;
+  uniqueCode: string;
+  ownershipUserName: string;
+  status: string;
+  dateBrought: string;
+}
+
+export interface RelatedVarietiesSection {
+  readonly kind: "related-varieties";
+  title: string;
+  icon: LucideIcon;
+  items: RelatedVarietyItem[];
+  viewAllHref: string;
+}
+
+export interface RelatedSampleItem {
+  id: string;
+  name: string;
+  uniqueCode: string;
+  ownershipUserName: string;
+  status: string;
+  dateBrought: string;
+}
+
+export interface RelatedSamplesSection {
+  readonly kind: "related-samples";
+  title: string;
+  icon: LucideIcon;
+  items: RelatedSampleItem[];
+  viewAllHref: string;
 }
 
 export interface ParentSpeciesSection {
@@ -92,8 +121,9 @@ export interface QuickInfoSection {
 export type DetailSection =
   | BatchInfoSection
   | HealthScoreSection
-  | GrowthMilestonesSection
   | EnvironmentalLogSection
+  | RelatedVarietiesSection
+  | RelatedSamplesSection
   | ParentSpeciesSection
   | QuickInfoSection;
 

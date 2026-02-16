@@ -2,8 +2,19 @@
  * usePlantSpeciesView — All state + logic for the Plant Species page.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
+import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
+import { usePersistedState } from "@/lib/persistence";
+import {
+    checkDuplicate,
+    collectErrors,
+    type FieldErrors,
+    isValid,
+    required,
+    sanitizeForm,
+    throttleSubmit,
+} from "@/lib/validation";
 import type { LucideIcon } from "lucide-react";
 import { Bean, Citrus, Flower2, Leaf, Vegan, Wheat } from "lucide-react";
 import { useState } from "react";
@@ -212,13 +223,22 @@ const SEED_DATA: SpeciesItem[] = [
 
 export function usePlantSpeciesView() {
   const navigate = useNavigate();
-  const [items, setItems] = useState<SpeciesItem[]>(SEED_DATA);
+  const [items, setItems] = usePersistedState<SpeciesItem[]>(
+    "plant_species",
+    SEED_DATA,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [familyFilter, setFamilyFilter] = useState("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SpeciesItem | null>(null);
   const [form, setForm] = useState<SpeciesForm>(EMPTY_FORM);
+  const [formErrors, setFormErrors] = useState<FieldErrors<keyof SpeciesForm>>(
+    {},
+  );
+
+  // ── Delete confirmation ──
+  const deleteDialog = useConfirmDialog();
 
   // ── Derived ──
   const families = [...new Set(items.map((s) => s.family))];
@@ -307,9 +327,53 @@ export function usePlantSpeciesView() {
   };
 
   const submitSpeciesForm = () => {
-    const fInfo = FAMILY_ICONS[form.family] || FAMILY_ICONS.Other;
-    const parsedTags = form.tags
-      ? form.tags
+    // ── Throttle guard ──
+    const throttleErr = throttleSubmit("species_form", 1000);
+    if (throttleErr) {
+      toast.error(throttleErr);
+      return;
+    }
+
+    // ── Sanitize ──
+    const clean = sanitizeForm(form);
+
+    // ── Validate ──
+    const errors = collectErrors<keyof SpeciesForm>({
+      commonName: required(clean.commonName, "Common name"),
+      scientificName:
+        required(clean.scientificName, "Scientific name") ||
+        checkDuplicate(
+          items,
+          "scientificName",
+          clean.scientificName,
+          editingItem?.id,
+        ),
+      family: required(clean.family, "Family"),
+      optimalTemp: required(clean.optimalTemp, "Optimal temperature"),
+      khmerName: undefined,
+      growthType: undefined,
+      description: undefined,
+      imageUrl: undefined,
+      nativeRegion: undefined,
+      lightRequirement: undefined,
+      waterRequirement: undefined,
+      soilType: undefined,
+      humidity: undefined,
+      propagation: undefined,
+      maturityDays: undefined,
+      maxHeight: undefined,
+      tags: undefined,
+    });
+    if (!isValid(errors)) {
+      setFormErrors(errors);
+      toast.error("Please fix the highlighted errors");
+      return;
+    }
+    setFormErrors({});
+
+    const fInfo = FAMILY_ICONS[clean.family] || FAMILY_ICONS.Other;
+    const parsedTags = clean.tags
+      ? clean.tags
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean)
@@ -321,23 +385,23 @@ export function usePlantSpeciesView() {
           s.id === editingItem.id
             ? {
                 ...s,
-                commonName: form.commonName,
-                scientificName: form.scientificName,
-                family: form.family,
-                growthType: form.growthType,
-                optimalTemp: form.optimalTemp,
-                description: form.description,
-                imageUrl: form.imageUrl || undefined,
-                nativeRegion: form.nativeRegion || undefined,
-                lightRequirement: form.lightRequirement || undefined,
-                waterRequirement: form.waterRequirement || undefined,
-                soilType: form.soilType || undefined,
-                humidity: form.humidity || undefined,
-                propagation: form.propagation || undefined,
-                maturityDays: form.maturityDays
-                  ? Number(form.maturityDays)
+                commonName: clean.commonName,
+                scientificName: clean.scientificName,
+                family: clean.family,
+                growthType: clean.growthType,
+                optimalTemp: clean.optimalTemp,
+                description: clean.description,
+                imageUrl: clean.imageUrl || undefined,
+                nativeRegion: clean.nativeRegion || undefined,
+                lightRequirement: clean.lightRequirement || undefined,
+                waterRequirement: clean.waterRequirement || undefined,
+                soilType: clean.soilType || undefined,
+                humidity: clean.humidity || undefined,
+                propagation: clean.propagation || undefined,
+                maturityDays: clean.maturityDays
+                  ? Number(clean.maturityDays)
                   : undefined,
-                maxHeight: form.maxHeight || undefined,
+                maxHeight: clean.maxHeight || undefined,
                 tags: parsedTags.length > 0 ? parsedTags : undefined,
                 icon: fInfo.icon,
                 color: fInfo.color,
@@ -349,25 +413,27 @@ export function usePlantSpeciesView() {
       const newId = `SP-${String(items.length + 1).padStart(3, "0")}`;
       const newItem: SpeciesItem = {
         id: newId,
-        commonName: form.commonName,
-        scientificName: form.scientificName,
-        family: form.family,
-        growthType: form.growthType,
-        optimalTemp: form.optimalTemp,
-        description: form.description,
+        commonName: clean.commonName,
+        scientificName: clean.scientificName,
+        family: clean.family,
+        growthType: clean.growthType,
+        optimalTemp: clean.optimalTemp,
+        description: clean.description,
         activeBatches: 0,
         totalPlants: 0,
         icon: fInfo.icon,
         color: fInfo.color,
-        imageUrl: form.imageUrl || undefined,
-        nativeRegion: form.nativeRegion || undefined,
-        lightRequirement: form.lightRequirement || undefined,
-        waterRequirement: form.waterRequirement || undefined,
-        soilType: form.soilType || undefined,
-        humidity: form.humidity || undefined,
-        propagation: form.propagation || undefined,
-        maturityDays: form.maturityDays ? Number(form.maturityDays) : undefined,
-        maxHeight: form.maxHeight || undefined,
+        imageUrl: clean.imageUrl || undefined,
+        nativeRegion: clean.nativeRegion || undefined,
+        lightRequirement: clean.lightRequirement || undefined,
+        waterRequirement: clean.waterRequirement || undefined,
+        soilType: clean.soilType || undefined,
+        humidity: clean.humidity || undefined,
+        propagation: clean.propagation || undefined,
+        maturityDays: clean.maturityDays
+          ? Number(clean.maturityDays)
+          : undefined,
+        maxHeight: clean.maxHeight || undefined,
         tags: parsedTags.length > 0 ? parsedTags : undefined,
       };
       setItems((prev) => [...prev, newItem]);
@@ -377,10 +443,25 @@ export function usePlantSpeciesView() {
     setForm(EMPTY_FORM);
     toast.success(
       isEditing
-        ? `${form.commonName} updated successfully`
-        : `${form.commonName} added successfully`,
+        ? `${clean.commonName} updated successfully`
+        : `${clean.commonName} added successfully`,
     );
     setEditingItem(null);
+  };
+
+  // ── Delete Species (with confirmation) ──
+  const requestDeleteSpecies = (species: SpeciesItem) => {
+    deleteDialog.requestConfirm(species.id, {
+      title: `Delete ${species.commonName}?`,
+      description: `This will permanently remove ${species.scientificName} (${species.id}).`,
+    });
+  };
+
+  const confirmDeleteSpecies = () => {
+    deleteDialog.confirm((id) => {
+      setItems((prev) => prev.filter((s) => s.id !== id));
+      toast.success("Species deleted");
+    });
   };
 
   return {
@@ -401,11 +482,16 @@ export function usePlantSpeciesView() {
     formTitle,
     formDescription,
     form,
+    formErrors,
     canSubmitForm,
     openCreateForm,
     openEditForm,
     closeForm,
     updateFormField,
     submitSpeciesForm,
+    // Delete
+    deleteDialog,
+    requestDeleteSpecies,
+    confirmDeleteSpecies,
   };
 }

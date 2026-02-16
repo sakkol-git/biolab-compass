@@ -41,6 +41,10 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Tomato",
     khmerName: "ប៉េងប៉ោះ",
     family: "Solanaceae",
+    growthType: "Annual",
+    optimalTemp: "18–25°C",
+    activeBatches: 1,
+    totalPlants: 150,
     description:
       "Widely cultivated edible fruit-bearing plant used in various research studies. Known for its complex genetic architecture and significance in studying fruit development, ripening, and disease resistance mechanisms.",
     imageUrl:
@@ -70,6 +74,10 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Thale Cress",
     khmerName: "ស្មៅថែល",
     family: "Brassicaceae",
+    growthType: "Annual",
+    optimalTemp: "20–24°C",
+    activeBatches: 1,
+    totalPlants: 300,
     description:
       "Model organism for plant biology and genetics research. First plant to have its entire genome sequenced. Widely used in studies of gene regulation, development, and stress responses.",
     imageUrl:
@@ -99,6 +107,10 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Maize",
     khmerName: "ពោត",
     family: "Poaceae",
+    growthType: "Annual",
+    optimalTemp: "21–30°C",
+    activeBatches: 1,
+    totalPlants: 500,
     description:
       "Major cereal grain used in genetics, breeding, and biofuel research. Its large genome and genetic diversity make it invaluable for quantitative trait loci mapping and heterosis studies.",
     imageUrl:

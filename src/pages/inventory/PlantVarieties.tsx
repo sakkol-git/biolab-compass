@@ -9,6 +9,7 @@ import { Leaf, MapPin, Pencil, Plus, Trash2, User } from "lucide-react";
 
 import EmptyState from "@/components/EmptyState";
 import AppLayout from "@/components/layout/AppLayout";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import PageHeader from "@/components/shared/PageHeader";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
@@ -144,7 +145,7 @@ const PlantVarieties = () => {
                   }
                   tags={[]}
                   onClick={() =>
-                    view.navigate(`/inventory/plant-varieties/${item.id}`)
+                    view.navigate(`/inventory/products/varieties/${item.id}`)
                   }
                   onEdit={() => view.openEditForm(item)}
                   imageBackgroundColor="bg-emerald-50 dark:bg-emerald-950/30"
@@ -206,7 +207,7 @@ const PlantVarieties = () => {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-destructive"
-                        onClick={() => view.handleDelete(item.id)}
+                        onClick={() => view.requestDeleteVariety(item)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -370,6 +371,17 @@ const PlantVarieties = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Delete Confirmation ── */}
+      <ConfirmDialog
+        open={view.deleteDialog.open}
+        onOpenChange={view.deleteDialog.setOpen}
+        onConfirm={view.confirmDeleteVariety}
+        title={view.deleteDialog.pendingMeta.title}
+        description={view.deleteDialog.pendingMeta.description}
+        confirmLabel="Delete"
+        variant="destructive"
+      />
     </AppLayout>
   );
 };

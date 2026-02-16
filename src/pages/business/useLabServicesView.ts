@@ -2,16 +2,26 @@
  * useLabServicesView — State + logic for the Lab Services page.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
+import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
 import { labServicesData } from "@/data/mockLabServiceData";
-import { toast } from "@/hooks/use-toast";
+import { usePersistedState } from "@/lib/persistence";
+import {
+    collectErrors,
+    type FieldErrors,
+    isValid,
+    required,
+    sanitizeForm,
+    throttleSubmit,
+} from "@/lib/validation";
 import type {
     LabService,
     LabServiceStatus,
     ServicePaymentStatus,
 } from "@/types/business";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export interface LabServiceForm {
   serviceTitle: string;
@@ -65,7 +75,16 @@ export function useLabServicesView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<LabServiceForm>(EMPTY_FORM);
-  const [items, setItems] = useState<LabService[]>(labServicesData);
+  const [formErrors, setFormErrors] = useState<
+    FieldErrors<keyof LabServiceForm>
+  >({});
+  const [items, setItems] = usePersistedState<LabService[]>(
+    "lab_services",
+    labServicesData,
+  );
+
+  // ── Delete confirmation ──
+  const deleteDialog = useConfirmDialog();
 
   const filteredItems = useMemo(() => {
     let result = items;
@@ -137,44 +156,61 @@ export function useLabServicesView() {
   };
 
   const handleSave = () => {
-    if (!form.serviceTitle || !form.clientName || !form.serviceDescription) {
-      toast({
-        title: "Error",
-        description: "Please fill required fields",
-        variant: "destructive",
-      });
+    const throttleErr = throttleSubmit("lab_service_form", 1000);
+    if (throttleErr) {
+      toast.error(throttleErr);
       return;
     }
+
+    const clean = sanitizeForm(form);
+    const errors = collectErrors<keyof LabServiceForm>({
+      serviceTitle: required(clean.serviceTitle, "Service title"),
+      clientName: required(clean.clientName, "Client name"),
+      serviceDescription: required(clean.serviceDescription, "Description"),
+      clientContact: undefined,
+      assignedStaff: undefined,
+      startDate: undefined,
+      endDate: undefined,
+      status: undefined,
+      resultSummary: undefined,
+      serviceFee: undefined,
+      paymentStatus: undefined,
+      notes: undefined,
+    });
+    if (!isValid(errors)) {
+      setFormErrors(errors);
+      toast.error("Please fix the highlighted errors");
+      return;
+    }
+    setFormErrors({});
+
     if (editingId) {
       setItems((prev) =>
         prev.map((item) =>
           item.id === editingId
             ? {
                 ...item,
-                serviceTitle: form.serviceTitle,
-                clientName: form.clientName,
-                clientContact: form.clientContact || undefined,
-                serviceDescription: form.serviceDescription,
-                assignedStaff: form.assignedStaff
-                  ? form.assignedStaff.split(",").map((s) => s.trim())
+                serviceTitle: clean.serviceTitle,
+                clientName: clean.clientName,
+                clientContact: clean.clientContact || undefined,
+                serviceDescription: clean.serviceDescription,
+                assignedStaff: clean.assignedStaff
+                  ? clean.assignedStaff.split(",").map((s) => s.trim())
                   : [],
-                startDate: form.startDate || undefined,
-                endDate: form.endDate || undefined,
-                status: form.status,
-                resultSummary: form.resultSummary || undefined,
-                serviceFee: form.serviceFee
-                  ? Number(form.serviceFee)
+                startDate: clean.startDate || undefined,
+                endDate: clean.endDate || undefined,
+                status: clean.status,
+                resultSummary: clean.resultSummary || undefined,
+                serviceFee: clean.serviceFee
+                  ? Number(clean.serviceFee)
                   : undefined,
-                paymentStatus: form.paymentStatus,
-                notes: form.notes || undefined,
+                paymentStatus: clean.paymentStatus,
+                notes: clean.notes || undefined,
               }
             : item,
         ),
       );
-      toast({
-        title: "Updated",
-        description: `Service "${form.serviceTitle}" updated`,
-      });
+      toast.success(`Service "${clean.serviceTitle}" updated`);
     } else {
       const newId = `SVC-${String(items.length + 1).padStart(3, "0")}`;
       setItems((prev) => [
@@ -182,34 +218,40 @@ export function useLabServicesView() {
         {
           id: newId,
           serviceCode: newId,
-          serviceTitle: form.serviceTitle,
-          clientName: form.clientName,
-          clientContact: form.clientContact || undefined,
-          serviceDescription: form.serviceDescription,
-          assignedStaff: form.assignedStaff
-            ? form.assignedStaff.split(",").map((s) => s.trim())
+          serviceTitle: clean.serviceTitle,
+          clientName: clean.clientName,
+          clientContact: clean.clientContact || undefined,
+          serviceDescription: clean.serviceDescription,
+          assignedStaff: clean.assignedStaff
+            ? clean.assignedStaff.split(",").map((s) => s.trim())
             : [],
-          startDate: form.startDate || undefined,
-          endDate: form.endDate || undefined,
-          status: form.status,
-          resultSummary: form.resultSummary || undefined,
-          serviceFee: form.serviceFee ? Number(form.serviceFee) : undefined,
-          paymentStatus: form.paymentStatus,
-          notes: form.notes || undefined,
+          startDate: clean.startDate || undefined,
+          endDate: clean.endDate || undefined,
+          status: clean.status,
+          resultSummary: clean.resultSummary || undefined,
+          serviceFee: clean.serviceFee ? Number(clean.serviceFee) : undefined,
+          paymentStatus: clean.paymentStatus,
+          notes: clean.notes || undefined,
           createdAt: new Date().toISOString().split("T")[0],
         },
       ]);
-      toast({
-        title: "Created",
-        description: `Lab service "${form.serviceTitle}" created`,
-      });
+      toast.success(`Lab service "${clean.serviceTitle}" created`);
     }
     setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    toast({ title: "Deleted", description: "Lab service removed" });
+  const requestDeleteService = (item: LabService) => {
+    deleteDialog.requestConfirm(item.id, {
+      title: `Delete ${item.serviceTitle}?`,
+      description: `This will permanently remove service ${item.serviceCode}.`,
+    });
+  };
+
+  const confirmDeleteService = () => {
+    deleteDialog.confirm((id) => {
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      toast.success("Lab service deleted");
+    });
   };
 
   return {
@@ -223,6 +265,7 @@ export function useLabServicesView() {
     setDialogOpen,
     editingId,
     form,
+    formErrors,
     setForm,
     items,
     filteredItems,
@@ -232,6 +275,8 @@ export function useLabServicesView() {
     openCreateForm,
     openEditForm,
     handleSave,
-    handleDelete,
+    deleteDialog,
+    requestDeleteService,
+    confirmDeleteService,
   } as const;
 }

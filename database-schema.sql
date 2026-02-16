@@ -115,16 +115,29 @@ CREATE TYPE enum_protocol_status AS ENUM (
   'Archived'
 );
 
--- User Role Enums (NEW — RBAC)
+-- User Role Enums (RBAC — expanded to 6 roles)
 CREATE TYPE enum_user_role AS ENUM (
   'Admin',
   'Lab Manager',
-  'Lab Assistant'
+  'Researcher',
+  'Lab Assistant',
+  'Intern',
+  'Guest'
 );
 
 -- Plant Variety/Sample Status
 CREATE TYPE enum_plant_variety_status AS ENUM (
   'Active',
+  'Archived',
+  'Destroyed'
+);
+
+-- Plant Sample Status (distinct from variety status)
+CREATE TYPE enum_plant_sample_status AS ENUM (
+  'Active',
+  'In Testing',
+  'Consumed',
+  'Contaminated',
   'Archived',
   'Destroyed'
 );

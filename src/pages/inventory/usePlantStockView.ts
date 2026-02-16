@@ -2,8 +2,19 @@
  * usePlantStockView — All state + logic for the Plant Stock Management page.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
+import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
+import { usePersistedState } from "@/lib/persistence";
+import {
+    collectErrors,
+    type FieldErrors,
+    isValid,
+    positiveNumber,
+    required,
+    sanitizeForm,
+    throttleSubmit,
+} from "@/lib/validation";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -179,7 +190,10 @@ export function usePlantStockView() {
   const [searchParams] = useSearchParams();
   const speciesParam = searchParams.get("species") || "";
 
-  const [items, setItems] = useState<StockItem[]>(SEED_DATA);
+  const [items, setItems] = usePersistedState<StockItem[]>(
+    "plant_stock",
+    SEED_DATA,
+  );
   const [searchQuery, setSearchQuery] = useState(speciesParam);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [stageFilter, setStageFilter] = useState("all");
@@ -187,6 +201,12 @@ export function usePlantStockView() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [form, setForm] = useState<StockForm>(EMPTY_FORM);
+  const [formErrors, setFormErrors] = useState<FieldErrors<keyof StockForm>>(
+    {},
+  );
+
+  // ── Delete confirmation ──
+  const deleteDialog = useConfirmDialog();
 
   // ── Derived ──
   const locations = [...new Set(items.map((b) => b.location))];
@@ -279,27 +299,59 @@ export function usePlantStockView() {
   };
 
   const submitStockForm = () => {
+    // ── Throttle guard ──
+    const throttleErr = throttleSubmit("stock_form", 1000);
+    if (throttleErr) {
+      toast.error(throttleErr);
+      return;
+    }
+
+    const clean = sanitizeForm(form);
+
+    // ── Validate ──
+    const errors = collectErrors<keyof StockForm>({
+      commonName: required(clean.commonName, "Common name"),
+      species: required(clean.species, "Species"),
+      quantity: positiveNumber(clean.quantity, "Quantity"),
+      location: required(clean.location, "Location"),
+      startDate: required(clean.startDate, "Start date"),
+      stage: undefined,
+      status: undefined,
+      notes: undefined,
+      imageUrl: undefined,
+      sourceMaterial: undefined,
+      expectedHarvestDate: undefined,
+      healthScore: undefined,
+      assignedTo: undefined,
+    });
+    if (!isValid(errors)) {
+      setFormErrors(errors);
+      toast.error("Please fix the highlighted errors");
+      return;
+    }
+    setFormErrors({});
+
     if (editingItem) {
       setItems((prev) =>
         prev.map((b) =>
           b.id === editingItem.id
             ? {
                 ...b,
-                species: form.species,
-                commonName: form.commonName,
-                stage: form.stage,
-                quantity: Number(form.quantity) || 0,
-                location: form.location,
-                status: form.status,
-                startDate: form.startDate,
-                notes: form.notes,
-                imageUrl: form.imageUrl || undefined,
-                sourceMaterial: form.sourceMaterial || undefined,
-                expectedHarvestDate: form.expectedHarvestDate || undefined,
-                healthScore: form.healthScore
-                  ? Number(form.healthScore)
+                species: clean.species,
+                commonName: clean.commonName,
+                stage: clean.stage,
+                quantity: Number(clean.quantity) || 0,
+                location: clean.location,
+                status: clean.status,
+                startDate: clean.startDate,
+                notes: clean.notes,
+                imageUrl: clean.imageUrl || undefined,
+                sourceMaterial: clean.sourceMaterial || undefined,
+                expectedHarvestDate: clean.expectedHarvestDate || undefined,
+                healthScore: clean.healthScore
+                  ? Number(clean.healthScore)
                   : undefined,
-                assignedTo: form.assignedTo || undefined,
+                assignedTo: clean.assignedTo || undefined,
               }
             : b,
         ),
@@ -308,19 +360,19 @@ export function usePlantStockView() {
       const newId = `PB-${String(items.length + 1).padStart(3, "0")}`;
       const newItem: StockItem = {
         id: newId,
-        species: form.species,
-        commonName: form.commonName,
-        stage: form.stage,
-        quantity: Number(form.quantity) || 0,
-        location: form.location,
-        status: form.status,
-        startDate: form.startDate,
-        notes: form.notes,
-        imageUrl: form.imageUrl || undefined,
-        sourceMaterial: form.sourceMaterial || undefined,
-        expectedHarvestDate: form.expectedHarvestDate || undefined,
-        healthScore: form.healthScore ? Number(form.healthScore) : undefined,
-        assignedTo: form.assignedTo || undefined,
+        species: clean.species,
+        commonName: clean.commonName,
+        stage: clean.stage,
+        quantity: Number(clean.quantity) || 0,
+        location: clean.location,
+        status: clean.status,
+        startDate: clean.startDate,
+        notes: clean.notes,
+        imageUrl: clean.imageUrl || undefined,
+        sourceMaterial: clean.sourceMaterial || undefined,
+        expectedHarvestDate: clean.expectedHarvestDate || undefined,
+        healthScore: clean.healthScore ? Number(clean.healthScore) : undefined,
+        assignedTo: clean.assignedTo || undefined,
       };
       setItems((prev) => [...prev, newItem]);
     }
@@ -333,6 +385,21 @@ export function usePlantStockView() {
         : "New stock entry added successfully",
     );
     setEditingItem(null);
+  };
+
+  // ── Delete Stock (with confirmation) ──
+  const requestDeleteStock = (stock: StockItem) => {
+    deleteDialog.requestConfirm(stock.id, {
+      title: `Delete stock ${stock.id}?`,
+      description: `This will permanently remove ${stock.commonName} stock entry.`,
+    });
+  };
+
+  const confirmDeleteStock = () => {
+    deleteDialog.confirm((id) => {
+      setItems((prev) => prev.filter((b) => b.id !== id));
+      toast.success("Stock entry deleted");
+    });
   };
 
   return {
@@ -354,11 +421,16 @@ export function usePlantStockView() {
     formTitle,
     formDescription,
     form,
+    formErrors,
     canSubmitForm,
     openCreateForm,
     openEditForm,
     closeForm,
     updateFormField,
     submitStockForm,
+    // Delete
+    deleteDialog,
+    requestDeleteStock,
+    confirmDeleteStock,
   };
 }

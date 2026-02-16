@@ -2,15 +2,26 @@
  * usePlantSamplesView — State + logic for the Plant Samples page.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
+import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
 import { speciesDetailData } from "@/data/mockDetailData";
 import { plantSamplesData } from "@/data/mockInventoryData";
-import { toast } from "@/hooks/use-toast";
+import { usePersistedState } from "@/lib/persistence";
+import {
+    collectErrors,
+    type FieldErrors,
+    isValid,
+    required,
+    sanitizeForm,
+    throttleSubmit,
+    validateForeignKey,
+} from "@/lib/validation";
 import type { LucideIcon } from "lucide-react";
 import { TestTube } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export interface SampleItem {
   id: string;
@@ -73,7 +84,15 @@ export function usePlantSamplesView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<SampleForm>(EMPTY_FORM);
-  const [items, setItems] = useState<SampleItem[]>(
+  const [formErrors, setFormErrors] = useState<FieldErrors<keyof SampleForm>>(
+    {},
+  );
+
+  // ── Delete confirmation ──
+  const deleteDialog = useConfirmDialog();
+
+  const [items, setItems] = usePersistedState<SampleItem[]>(
+    "plant_samples",
     plantSamplesData.map((s) => ({
       id: s.id,
       sampleCode: s.sampleCode,
@@ -152,28 +171,49 @@ export function usePlantSamplesView() {
   };
 
   const handleSave = () => {
-    if (!form.name || !form.speciesId || !form.originLocation) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+    // ── Throttle guard ──
+    const throttleErr = throttleSubmit("sample_form", 1000);
+    if (throttleErr) {
+      toast.error(throttleErr);
       return;
     }
-    const matchedSpecies = species.find((s) => s.id === form.speciesId);
+
+    const clean = sanitizeForm(form);
+
+    // ── Validate ──
+    const errors = collectErrors<keyof SampleForm>({
+      name: required(clean.name, "Sample name"),
+      speciesId: validateForeignKey(species, clean.speciesId, "Species"),
+      originLocation: required(clean.originLocation, "Origin location"),
+      uniqueCode: undefined,
+      ownershipUserName: undefined,
+      ownershipDepartment: undefined,
+      description: undefined,
+      dateBrought: undefined,
+      status: undefined,
+      notes: undefined,
+    });
+    if (!isValid(errors)) {
+      setFormErrors(errors);
+      toast.error("Please fix the highlighted errors");
+      return;
+    }
+    setFormErrors({});
+
+    const matchedSpecies = species.find((s) => s.id === clean.speciesId);
     if (editingId) {
       setItems((prev) =>
         prev.map((item) =>
           item.id === editingId
             ? {
                 ...item,
-                ...form,
+                ...clean,
                 speciesName: matchedSpecies?.scientificName ?? item.speciesName,
               }
             : item,
         ),
       );
-      toast({ title: "Updated", description: `Sample "${form.name}" updated` });
+      toast.success(`Sample "${clean.name}" updated`);
     } else {
       const newId = `PS-${String(items.length + 1).padStart(3, "0")}`;
       setItems((prev) => [
@@ -181,30 +221,39 @@ export function usePlantSamplesView() {
         {
           id: newId,
           sampleCode: newId,
-          speciesId: form.speciesId,
+          speciesId: clean.speciesId,
           speciesName: matchedSpecies?.scientificName ?? "",
-          name: form.name,
+          name: clean.name,
           uniqueCode:
-            form.uniqueCode ||
+            clean.uniqueCode ||
             `PS-SMP-${String(items.length + 1).padStart(4, "0")}`,
-          ownershipUserName: form.ownershipUserName,
-          ownershipDepartment: form.ownershipDepartment,
-          originLocation: form.originLocation,
-          description: form.description,
-          dateBrought: form.dateBrought,
-          status: form.status,
+          ownershipUserName: clean.ownershipUserName,
+          ownershipDepartment: clean.ownershipDepartment,
+          originLocation: clean.originLocation,
+          description: clean.description,
+          dateBrought: clean.dateBrought,
+          status: clean.status,
           icon: TestTube,
           color: "text-blue-600",
         },
       ]);
-      toast({ title: "Created", description: `Sample "${form.name}" added` });
+      toast.success(`Sample "${clean.name}" added`);
     }
     setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    toast({ title: "Deleted", description: "Sample removed" });
+  const requestDeleteSample = (item: SampleItem) => {
+    deleteDialog.requestConfirm(item.id, {
+      title: `Delete ${item.name}?`,
+      description: `This will permanently remove sample ${item.name} (${item.id}).`,
+    });
+  };
+
+  const confirmDeleteSample = () => {
+    deleteDialog.confirm((id) => {
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      toast.success("Sample deleted");
+    });
   };
 
   return {
@@ -218,6 +267,7 @@ export function usePlantSamplesView() {
     setDialogOpen,
     editingId,
     form,
+    formErrors,
     setForm,
     items,
     filteredItems,
@@ -226,7 +276,9 @@ export function usePlantSamplesView() {
     openCreateForm,
     openEditForm,
     handleSave,
-    handleDelete,
+    deleteDialog,
+    requestDeleteSample,
+    confirmDeleteSample,
     navigate,
   } as const;
 }

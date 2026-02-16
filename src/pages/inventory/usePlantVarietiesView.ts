@@ -2,15 +2,26 @@
  * usePlantVarietiesView — State + logic for the Plant Varieties page.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
+import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
 import { speciesDetailData } from "@/data/mockDetailData";
 import { plantVarietiesData } from "@/data/mockInventoryData";
-import { toast } from "@/hooks/use-toast";
+import { usePersistedState } from "@/lib/persistence";
+import {
+    collectErrors,
+    type FieldErrors,
+    isValid,
+    required,
+    sanitizeForm,
+    throttleSubmit,
+    validateForeignKey,
+} from "@/lib/validation";
 import type { LucideIcon } from "lucide-react";
 import { Leaf } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -77,7 +88,15 @@ export function usePlantVarietiesView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<VarietyForm>(EMPTY_FORM);
-  const [items, setItems] = useState<VarietyItem[]>(
+  const [formErrors, setFormErrors] = useState<FieldErrors<keyof VarietyForm>>(
+    {},
+  );
+
+  // ── Delete confirmation ──
+  const deleteDialog = useConfirmDialog();
+
+  const [items, setItems] = usePersistedState<VarietyItem[]>(
+    "plant_varieties",
     plantVarietiesData.map((v) => ({
       id: v.id,
       varietyCode: v.varietyCode,
@@ -161,31 +180,49 @@ export function usePlantVarietiesView() {
   };
 
   const handleSave = () => {
-    if (!form.name || !form.speciesId || !form.originLocation) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+    // ── Throttle guard ──
+    const throttleErr = throttleSubmit("variety_form", 1000);
+    if (throttleErr) {
+      toast.error(throttleErr);
       return;
     }
-    const matchedSpecies = species.find((s) => s.id === form.speciesId);
+
+    const clean = sanitizeForm(form);
+
+    // ── Validate ──
+    const errors = collectErrors<keyof VarietyForm>({
+      name: required(clean.name, "Variety name"),
+      speciesId: validateForeignKey(species, clean.speciesId, "Species"),
+      originLocation: required(clean.originLocation, "Origin location"),
+      uniqueCode: undefined,
+      ownershipUserName: undefined,
+      ownershipDepartment: undefined,
+      description: undefined,
+      dateBrought: undefined,
+      status: undefined,
+      notes: undefined,
+    });
+    if (!isValid(errors)) {
+      setFormErrors(errors);
+      toast.error("Please fix the highlighted errors");
+      return;
+    }
+    setFormErrors({});
+
+    const matchedSpecies = species.find((s) => s.id === clean.speciesId);
     if (editingId) {
       setItems((prev) =>
         prev.map((item) =>
           item.id === editingId
             ? {
                 ...item,
-                ...form,
+                ...clean,
                 speciesName: matchedSpecies?.scientificName ?? item.speciesName,
               }
             : item,
         ),
       );
-      toast({
-        title: "Updated",
-        description: `Variety "${form.name}" updated successfully`,
-      });
+      toast.success(`Variety "${clean.name}" updated successfully`);
     } else {
       const newId = `PV-${String(items.length + 1).padStart(3, "0")}`;
       setItems((prev) => [
@@ -193,33 +230,39 @@ export function usePlantVarietiesView() {
         {
           id: newId,
           varietyCode: newId,
-          speciesId: form.speciesId,
+          speciesId: clean.speciesId,
           speciesName: matchedSpecies?.scientificName ?? "",
-          name: form.name,
+          name: clean.name,
           uniqueCode:
-            form.uniqueCode ||
+            clean.uniqueCode ||
             `PS-VAR-${String(items.length + 1).padStart(4, "0")}`,
-          ownershipUserName: form.ownershipUserName,
-          ownershipDepartment: form.ownershipDepartment,
-          originLocation: form.originLocation,
-          description: form.description,
-          dateBrought: form.dateBrought,
-          status: form.status,
+          ownershipUserName: clean.ownershipUserName,
+          ownershipDepartment: clean.ownershipDepartment,
+          originLocation: clean.originLocation,
+          description: clean.description,
+          dateBrought: clean.dateBrought,
+          status: clean.status,
           icon: Leaf,
           color: "text-emerald-600",
         },
       ]);
-      toast({
-        title: "Created",
-        description: `Variety "${form.name}" added successfully`,
-      });
+      toast.success(`Variety "${clean.name}" added successfully`);
     }
     setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    toast({ title: "Deleted", description: "Variety removed" });
+  const requestDeleteVariety = (item: VarietyItem) => {
+    deleteDialog.requestConfirm(item.id, {
+      title: `Delete ${item.name}?`,
+      description: `This will permanently remove variety ${item.name} (${item.id}).`,
+    });
+  };
+
+  const confirmDeleteVariety = () => {
+    deleteDialog.confirm((id) => {
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      toast.success("Variety deleted");
+    });
   };
 
   return {
@@ -233,6 +276,7 @@ export function usePlantVarietiesView() {
     setDialogOpen,
     editingId,
     form,
+    formErrors,
     setForm,
     items,
     filteredItems,
@@ -241,7 +285,9 @@ export function usePlantVarietiesView() {
     openCreateForm,
     openEditForm,
     handleSave,
-    handleDelete,
+    deleteDialog,
+    requestDeleteVariety,
+    confirmDeleteVariety,
     navigate,
   } as const;
 }

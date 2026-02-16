@@ -12,16 +12,18 @@ import type { SectionRendererMap } from "./types";
 
 import BatchInfoSectionRenderer from "./sections/BatchInfoSectionRenderer";
 import EnvironmentalLogSectionRenderer from "./sections/EnvironmentalLogSectionRenderer";
-import GrowthMilestonesSectionRenderer from "./sections/GrowthMilestonesSectionRenderer";
 import HealthScoreSectionRenderer from "./sections/HealthScoreSectionRenderer";
 import ParentSpeciesSectionRenderer from "./sections/ParentSpeciesSectionRenderer";
 import QuickInfoSectionRenderer from "./sections/QuickInfoSectionRenderer";
+import { RelatedSamplesSectionRenderer } from "./sections/RelatedSamplesSectionRenderer";
+import { RelatedVarietiesSectionRenderer } from "./sections/RelatedVarietiesSectionRenderer";
 
 export const sectionRegistry = {
   "batch-info": BatchInfoSectionRenderer,
   "health-score": HealthScoreSectionRenderer,
-  "growth-milestones": GrowthMilestonesSectionRenderer,
   "environmental-log": EnvironmentalLogSectionRenderer,
+  "related-varieties": RelatedVarietiesSectionRenderer,
+  "related-samples": RelatedSamplesSectionRenderer,
   "parent-species": ParentSpeciesSectionRenderer,
   "quick-info": QuickInfoSectionRenderer,
 } satisfies SectionRendererMap;

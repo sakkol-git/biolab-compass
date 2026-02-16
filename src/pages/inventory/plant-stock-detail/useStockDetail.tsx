@@ -8,14 +8,15 @@
 
 import { Badge } from "@/components/ui/badge";
 import { batchDetailData, type BatchDetail } from "@/data/mockDetailData";
+import { plantSamplesData, plantVarietiesData } from "@/data/mockInventoryData";
 import { cn } from "@/lib/utils";
 import {
     Activity,
+    Beaker,
     Clock,
     HeartPulse,
     Leaf,
     MapPin,
-    Milestone,
     Sprout,
     Thermometer,
 } from "lucide-react";
@@ -43,6 +44,29 @@ interface UseStockDetailResult {
 function assembleConfig(data: BatchDetail): StockPageConfig {
   const color = stageColor(data.stage);
   const badgeClass = statusBadgeClass(data.status);
+
+  // Get related varieties and samples for this species
+  const relatedVarieties = plantVarietiesData
+    .filter((variety) => variety.speciesId === data.speciesId)
+    .map((variety) => ({
+      id: variety.id,
+      name: variety.name,
+      uniqueCode: variety.uniqueCode,
+      ownershipUserName: variety.ownershipUserName,
+      status: variety.status,
+      dateBrought: variety.dateBrought,
+    }));
+
+  const relatedSamples = plantSamplesData
+    .filter((sample) => sample.speciesId === data.speciesId)
+    .map((sample) => ({
+      id: sample.id,
+      name: sample.name,
+      uniqueCode: sample.uniqueCode,
+      ownershipUserName: sample.ownershipUserName,
+      status: sample.status,
+      dateBrought: sample.dateBrought,
+    }));
 
   return {
     header: {
@@ -121,10 +145,18 @@ function assembleConfig(data: BatchDetail): StockPageConfig {
         description: healthDescription(data.healthScore),
       },
       {
-        kind: "growth-milestones",
-        title: "Growth Milestones",
-        icon: Milestone,
-        milestones: data.growthMilestones,
+        kind: "related-varieties",
+        title: "Related Varieties",
+        icon: Sprout,
+        items: relatedVarieties,
+        viewAllHref: `/inventory/plant-varieties?species=${encodeURIComponent(data.species)}`,
+      },
+      {
+        kind: "related-samples",
+        title: "Related Samples",
+        icon: Beaker,
+        items: relatedSamples,
+        viewAllHref: `/inventory/plant-samples?species=${encodeURIComponent(data.species)}`,
       },
     ],
 

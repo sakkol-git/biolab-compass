@@ -16,6 +16,7 @@ import {
 
 import EmptyState from "@/components/EmptyState";
 import AppLayout from "@/components/layout/AppLayout";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import PageHeader from "@/components/shared/PageHeader";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
@@ -207,7 +208,7 @@ const LabServices = () => {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive"
-                      onClick={() => view.handleDelete(item.id)}
+                      onClick={() => view.requestDeleteService(item)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -282,7 +283,7 @@ const LabServices = () => {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-destructive"
-                        onClick={() => view.handleDelete(item.id)}
+                        onClick={() => view.requestDeleteService(item)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -472,6 +473,17 @@ const LabServices = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Delete Confirmation ── */}
+      <ConfirmDialog
+        open={view.deleteDialog.open}
+        onOpenChange={view.deleteDialog.setOpen}
+        onConfirm={view.confirmDeleteService}
+        title={view.deleteDialog.pendingMeta.title}
+        description={view.deleteDialog.pendingMeta.description}
+        confirmLabel="Delete"
+        variant="destructive"
+      />
     </AppLayout>
   );
 };

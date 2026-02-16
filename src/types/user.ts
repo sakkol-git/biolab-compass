@@ -2,8 +2,16 @@
 // USER MODULE — TypeScript Interfaces
 // ═══════════════════════════════════════════════════════════════════════════
 
+import type { Auditable } from "@/types/inventory";
+
 // ─── User Roles (RBAC) ─────────────────────────────────────────────────────
-export type UserRole = "Admin" | "Lab Manager" | "Lab Assistant";
+export type UserRole =
+  | "Admin"
+  | "Lab Manager"
+  | "Researcher"
+  | "Lab Assistant"
+  | "Intern"
+  | "Guest";
 export type AchievementStatus = "Draft" | "Published";
 
 // ─── Role Permission Map ────────────────────────────────────────────────────
@@ -22,6 +30,8 @@ export interface RolePermissions {
   canViewAllAchievements: boolean;
   canManageOwnAchievements: boolean;
   canManageOwnProfile: boolean;
+  canExportData: boolean;
+  canImportData: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
@@ -40,6 +50,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllAchievements: true,
     canManageOwnAchievements: true,
     canManageOwnProfile: true,
+    canExportData: true,
+    canImportData: true,
   },
   "Lab Manager": {
     canManageUsers: false,
@@ -56,6 +68,26 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllAchievements: true,
     canManageOwnAchievements: true,
     canManageOwnProfile: true,
+    canExportData: true,
+    canImportData: true,
+  },
+  Researcher: {
+    canManageUsers: false,
+    canManageRoles: false,
+    canManageSystemSettings: false,
+    canDeleteAnyData: false,
+    canAccessInventory: true,
+    canAccessBusiness: false,
+    canAccessResearch: true,
+    canInputInventory: true,
+    canUpdateChemicalQuantity: true,
+    canCreateLabService: false,
+    canDeleteSpecies: false,
+    canViewAllAchievements: true,
+    canManageOwnAchievements: true,
+    canManageOwnProfile: true,
+    canExportData: true,
+    canImportData: false,
   },
   "Lab Assistant": {
     canManageUsers: false,
@@ -72,11 +104,49 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canViewAllAchievements: false,
     canManageOwnAchievements: true,
     canManageOwnProfile: true,
+    canExportData: false,
+    canImportData: false,
+  },
+  Intern: {
+    canManageUsers: false,
+    canManageRoles: false,
+    canManageSystemSettings: false,
+    canDeleteAnyData: false,
+    canAccessInventory: true,
+    canAccessBusiness: false,
+    canAccessResearch: true,
+    canInputInventory: false,
+    canUpdateChemicalQuantity: false,
+    canCreateLabService: false,
+    canDeleteSpecies: false,
+    canViewAllAchievements: false,
+    canManageOwnAchievements: true,
+    canManageOwnProfile: true,
+    canExportData: false,
+    canImportData: false,
+  },
+  Guest: {
+    canManageUsers: false,
+    canManageRoles: false,
+    canManageSystemSettings: false,
+    canDeleteAnyData: false,
+    canAccessInventory: true,
+    canAccessBusiness: false,
+    canAccessResearch: false,
+    canInputInventory: false,
+    canUpdateChemicalQuantity: false,
+    canCreateLabService: false,
+    canDeleteSpecies: false,
+    canViewAllAchievements: false,
+    canManageOwnAchievements: false,
+    canManageOwnProfile: true,
+    canExportData: false,
+    canImportData: false,
   },
 };
 
 // ─── User Profile ───────────────────────────────────────────────────────────
-export interface UserProfile {
+export interface UserProfile extends Auditable {
   id: string;
   userCode: string;
   name: string;
@@ -88,11 +158,10 @@ export interface UserProfile {
   phone?: string;
   bio?: string;
   lastActive?: string;
-  createdAt: string;
 }
 
 // ─── Research Achievement ──────────────────────────────────────────────────
-export interface ResearchAchievement {
+export interface ResearchAchievement extends Auditable {
   id: string;
   achievementCode: string;
   userId: string;
@@ -103,5 +172,4 @@ export interface ResearchAchievement {
   documentLink?: string;
   achievementDate: string;
   status: AchievementStatus;
-  createdAt: string;
 }

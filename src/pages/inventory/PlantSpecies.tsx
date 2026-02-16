@@ -13,6 +13,7 @@ import {
     Plus,
     Ruler,
     Sprout,
+    TestTube,
     Thermometer,
 } from "lucide-react";
 
@@ -22,10 +23,12 @@ import ImageUpload from "@/components/ImageUpload";
 import AppLayout from "@/components/layout/AppLayout";
 import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import PageHeader from "@/components/shared/PageHeader";
+import QuantityBadge from "@/components/shared/QuantityBadge";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
 import { ViewToggle } from "@/components/shared/ViewToggle";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -53,7 +56,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 
 // ─── Hook & Types ──────────────────────────────────────────────────────────
 import {
@@ -210,11 +212,12 @@ const SpeciesCard = ({
   onViewBatches: (name: string) => void;
 }) => {
   const Icon = item.icon;
-  const hasActiveBatches = item.activeBatches > 0;
+  const hasVarieties = item.varietyCount > 0;
+  const imageUrl = item.images?.[0];
 
   return (
     <ProductCard
-      image={item.imageUrl}
+      image={imageUrl}
       fallbackImage={
         <>
           <Icon
@@ -233,33 +236,35 @@ const SpeciesCard = ({
           : item.commonName
       }
       subtitle={item.scientificName}
-      id={item.id}
+      id={item.speciesCode}
       statusBadge={
-        <span
-          className={cn(
-            "text-xs font-medium px-2 py-1 tracking-wide rounded-lg",
-            hasActiveBatches
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground",
-          )}
-        >
-          {hasActiveBatches ? `${item.activeBatches} active` : "No batches"}
-        </span>
+        <div className="flex flex-wrap gap-1.5">
+          <Badge
+            variant={hasVarieties ? "default" : "secondary"}
+            className="text-xs"
+          >
+            {item.varietyCount}{" "}
+            {item.varietyCount === 1 ? "variety" : "varieties"}
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            {item.sampleCount} {item.sampleCount === 1 ? "sample" : "samples"}
+          </Badge>
+        </div>
       }
       meta={[
-        { icon: Thermometer, value: item.optimalTemp },
-        { icon: Sprout, value: item.growthType },
+        { icon: Thermometer, value: item.optimalTemp || "N/A" },
+        { icon: Sprout, value: item.growthType || "N/A" },
         {
-          icon: Leaf,
-          label: "plants total",
-          value: (item.totalPlants ?? 0).toLocaleString(),
+          icon: TestTube,
+          label: item.quantityUnit || "units",
+          value: (item.totalQuantity ?? 0).toLocaleString(),
         },
       ]}
-      tags={[]}
+      tags={item.tags || []}
       onClick={() => onNavigate(item.id)}
       onEdit={() => onEdit(item)}
       imageBackgroundColor={
-        hasActiveBatches ? "bg-primary/5 border-primary/20" : "bg-muted/50"
+        hasVarieties ? "bg-primary/5 border-primary/20" : "bg-muted/50"
       }
       className="aspect-square"
     />
@@ -292,13 +297,13 @@ const SpeciesTable = ({
       <TableHeader>
         <TableRow>
           <TableHead className="w-16">Image</TableHead>
-          <TableHead className="w-24">ID</TableHead>
+          <TableHead className="w-24">Code</TableHead>
           <TableHead>Common Name</TableHead>
           <TableHead>Scientific Name</TableHead>
           <TableHead>Family</TableHead>
-          <TableHead className="text-center">Growth Type</TableHead>
-          <TableHead className="text-center">Active Batches</TableHead>
-          <TableHead className="text-center">Total Plants</TableHead>
+          <TableHead className="text-center">Varieties</TableHead>
+          <TableHead className="text-center">Samples</TableHead>
+          <TableHead className="text-right">Total Qty</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -337,7 +342,8 @@ const SpeciesTableRow = ({
     e.stopPropagation();
     onViewBatches(item.commonName);
   };
-  const hasActiveBatches = item.activeBatches > 0;
+  const hasVarieties = item.varietyCount > 0;
+  const imageUrl = item.images?.[0];
 
   return (
     <TableRow
@@ -355,14 +361,14 @@ const SpeciesTableRow = ({
       <TableCell>
         <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted/50 flex items-center justify-center">
           <ImageWithFallback
-            src={item.imageUrl}
+            src={imageUrl}
             alt={item.commonName}
             fallback={<Sprout className="h-4 w-4 text-muted-foreground/50" />}
           />
         </div>
       </TableCell>
       <TableCell className="font-mono text-xs text-muted-foreground/70">
-        {item.id}
+        {item.speciesCode}
       </TableCell>
       <TableCell className="font-medium">
         {item.commonName}
@@ -375,24 +381,38 @@ const SpeciesTableRow = ({
       <TableCell className="italic text-muted-foreground">
         {item.scientificName}
       </TableCell>
-      <TableCell>{item.family}</TableCell>
-      <TableCell className="text-center">{item.growthType}</TableCell>
-      <TableCell className="text-center">
-        <span
-          className={cn(
-            "inline-block px-2 py-1 text-xs font-medium",
-            hasActiveBatches
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground",
-          )}
-        >
-          {item.activeBatches}
-        </span>
+      <TableCell>
+        <Badge variant="outline" className="text-xs">
+          {item.family}
+        </Badge>
       </TableCell>
-      <TableCell className="text-center font-medium tabular-nums">
-        {(item.totalPlants ?? 0).toLocaleString()}
+      <TableCell className="text-center">
+        <Badge
+          variant={hasVarieties ? "default" : "secondary"}
+          className="text-xs"
+        >
+          {item.varietyCount}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-center">
+        <Badge variant="outline" className="text-xs">
+          {item.sampleCount}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right font-medium tabular-nums">
+        {item.totalQuantity ? (
+          <QuantityBadge
+            quantity={item.totalQuantity}
+            unit={item.quantityUnit || "units"}
+            variant="default"
+            showIcon={false}
+          />
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        )}
       </TableCell>
       <TableCell className="text-right">
+        `
         <div className="flex items-center justify-end gap-2">
           <Button
             variant="ghost"

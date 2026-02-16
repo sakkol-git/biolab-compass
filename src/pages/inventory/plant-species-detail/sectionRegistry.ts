@@ -10,14 +10,18 @@
 
 import type { SectionRendererMap } from "./types";
 
-import BotanicalDescriptionRenderer from "./sections/BotanicalDescriptionRenderer";
 import AssociatedBatchesRenderer from "./sections/AssociatedBatchesRenderer";
+import BotanicalDescriptionRenderer from "./sections/BotanicalDescriptionRenderer";
 import CareRequirementsRenderer from "./sections/CareRequirementsRenderer";
+import { SamplesListRenderer } from "./sections/SamplesListRenderer";
 import TagsSectionRenderer from "./sections/TagsSectionRenderer";
+import { VarietiesListRenderer } from "./sections/VarietiesListRenderer";
 
 export const sectionRegistry = {
   "botanical-description": BotanicalDescriptionRenderer,
   "associated-batches": AssociatedBatchesRenderer,
   "care-requirements": CareRequirementsRenderer,
   tags: TagsSectionRenderer,
+  "varieties-list": VarietiesListRenderer,
+  "samples-list": SamplesListRenderer,
 } satisfies SectionRendererMap;

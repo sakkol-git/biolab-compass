@@ -40,7 +40,12 @@ export interface VarietyItem {
   status: string;
   icon: LucideIcon;
   color: string;
-  imageUrl?: string;
+  images?: string[];
+  // Hierarchical fields
+  sampleCount: number;
+  totalQuantity: number;
+  availableQuantity: number;
+  quantityUnit: string;
 }
 
 export interface VarietyForm {
@@ -101,18 +106,22 @@ export function usePlantVarietiesView() {
       id: v.id,
       varietyCode: v.varietyCode,
       speciesId: v.speciesId,
-      speciesName: v.speciesName,
+      speciesName: v.speciesName || "",
       name: v.name,
-      uniqueCode: v.uniqueCode,
+      uniqueCode: v.varietyCode,
       ownershipUserName: v.ownershipUserName,
       ownershipDepartment: v.ownershipDepartment,
-      originLocation: v.originLocation,
+      originLocation: v.originLocation || "",
       description: v.description,
       dateBrought: v.dateBrought,
       status: v.status,
       icon: Leaf,
       color: "text-emerald-600",
-      imageUrl: v.images?.[0],
+      images: v.images,
+      sampleCount: v.sampleCount || 0,
+      totalQuantity: v.totalQuantity || 0,
+      availableQuantity: v.availableQuantity || 0,
+      quantityUnit: v.quantityUnit || "units",
     })),
   );
 
@@ -244,6 +253,11 @@ export function usePlantVarietiesView() {
           status: clean.status,
           icon: Leaf,
           color: "text-emerald-600",
+          images: [],
+          sampleCount: 0,
+          totalQuantity: 0,
+          availableQuantity: 0,
+          quantityUnit: "units",
         },
       ]);
       toast.success(`Variety "${clean.name}" added successfully`);

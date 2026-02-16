@@ -9,22 +9,23 @@
 // - Registry contract enforced via `satisfies`
 // ═══════════════════════════════════════════════════════════════════════════
 
+import type { PlantSample, PlantVariety } from "@/types/inventory";
 import type { LucideIcon } from "lucide-react";
 
 export type {
-  KpiStat,
-  InfoField,
-  ActionButton,
-  DetailHeaderConfig,
-  HeroImageConfig,
+    ActionButton,
+    DetailHeaderConfig,
+    HeroImageConfig,
+    InfoField,
+    KpiStat
 } from "@/components/detail/detail-types";
 
 import type {
-  KpiStat,
-  InfoField,
-  ActionButton,
-  DetailHeaderConfig,
-  HeroImageConfig,
+    ActionButton,
+    DetailHeaderConfig,
+    HeroImageConfig,
+    InfoField,
+    KpiStat,
 } from "@/components/detail/detail-types";
 
 // ─── Domain-Specific Data Shapes ─────────────────────────────────────────
@@ -69,11 +70,27 @@ export interface TagsSection {
   tags: string[];
 }
 
+export interface VarietiesListSection {
+  readonly kind: "varieties-list";
+  title: string;
+  icon: LucideIcon;
+  varieties: PlantVariety[];
+}
+
+export interface SamplesListSection {
+  readonly kind: "samples-list";
+  title: string;
+  icon: LucideIcon;
+  samples: PlantSample[];
+}
+
 export type DetailSection =
   | BotanicalDescriptionSection
   | AssociatedBatchesSection
   | CareRequirementsSection
-  | TagsSection;
+  | TagsSection
+  | VarietiesListSection
+  | SamplesListSection;
 
 // ─── Page-Level Configuration ────────────────────────────────────────────
 

@@ -2,6 +2,7 @@
 // PLANT VARIETY DETAIL — Domain Types & Configuration Contracts
 // ═══════════════════════════════════════════════════════════════════════════
 
+import type { PlantSample } from "@/types/inventory";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -66,6 +67,13 @@ export interface ImagesSection {
   images: string[];
 }
 
+export interface SamplesListSection {
+  readonly kind: "samples-list";
+  title: string;
+  icon: LucideIcon;
+  samples: PlantSample[];
+}
+
 // ─── Combined Section Union ──────────────────────────────────────────────
 
 export type DetailSection =
@@ -74,7 +82,8 @@ export type DetailSection =
   | TraitsSection
   | GeneticInfoSection
   | NotesSection
-  | ImagesSection;
+  | ImagesSection
+  | SamplesListSection;
 
 // ─── Page Configuration ──────────────────────────────────────────────────
 

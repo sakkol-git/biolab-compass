@@ -3,18 +3,19 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { Badge } from "@/components/ui/badge";
-import { plantVarietiesData } from "@/data/mockInventoryData";
+import { plantSamplesData, plantVarietiesData } from "@/data/mockInventoryData";
 import { cn } from "@/lib/utils";
 import type { PlantVariety } from "@/types/inventory";
 import {
     Calendar,
     Dna,
     FileText,
+    FlaskConical,
     Image as ImageIcon,
     Info,
     MapPin,
     Sprout,
-    User
+    User,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -31,9 +32,15 @@ interface UseVarietyDetailResult {
 
 // ─── Config Assembly (pure transform) ──────────────────────────────────────
 
-function assembleConfig(data: PlantVariety): VarietyPageConfig {
+function assembleConfig(
+  data: PlantVariety,
+  varietyId: string,
+): VarietyPageConfig {
   const color = statusColor(data.status);
   const badgeClass = statusBadgeClass(data.status);
+
+  // Get samples for this variety
+  const samples = plantSamplesData.filter((s) => s.varietyId === varietyId);
 
   return {
     header: {
@@ -171,7 +178,7 @@ function assembleConfig(data: PlantVariety): VarietyPageConfig {
           ]
         : []),
 
-      ...(data.germinationRate || data.diseaseResistance || data.maturityDays
+      ...(data.germinationRate || data.diseaseResistance || data.maturityDaysMin
         ? [
             {
               kind: "genetic-info" as const,
@@ -194,11 +201,13 @@ function assembleConfig(data: PlantVariety): VarietyPageConfig {
                       },
                     ]
                   : []),
-                ...(data.maturityDays
+                ...(data.maturityDaysMin
                   ? [
                       {
                         label: "Days to Maturity",
-                        value: `${data.maturityDays} days`,
+                        value: data.maturityDaysMax
+                          ? `${data.maturityDaysMin}-${data.maturityDaysMax} days`
+                          : `${data.maturityDaysMin} days`,
                       },
                     ]
                   : []),
@@ -216,6 +225,16 @@ function assembleConfig(data: PlantVariety): VarietyPageConfig {
               title: "Notes",
               icon: FileText,
               content: data.notes,
+            },
+          ]
+        : []),
+      ...(samples.length > 0
+        ? [
+            {
+              kind: "samples-list" as const,
+              title: "Samples",
+              icon: FlaskConical,
+              samples: samples,
             },
           ]
         : []),
@@ -274,8 +293,8 @@ export function useVarietyDetail(): UseVarietyDetailResult {
   }, [id]);
 
   const config = useMemo(() => {
-    return variety ? assembleConfig(variety) : null;
-  }, [variety]);
+    return variety && id ? assembleConfig(variety, id) : null;
+  }, [variety, id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -26,19 +26,27 @@ import { toast } from "sonner";
 export interface SampleItem {
   id: string;
   sampleCode: string;
+  // Hierarchical structure
+  varietyId: string;
+  varietyName?: string;
   speciesId: string;
   speciesName: string;
   name: string;
   uniqueCode: string;
   ownershipUserName?: string;
   ownershipDepartment?: string;
-  originLocation: string;
+  originLocation?: string;
   description?: string;
   dateBrought?: string;
   status: string;
   icon: LucideIcon;
   color: string;
-  imageUrl?: string;
+  images?: string[];
+  // Physical quantity
+  quantity: number;
+  quantityUnit: string;
+  storageLocation?: string;
+  viabilityStatus?: string;
 }
 
 export interface SampleForm {
@@ -96,10 +104,12 @@ export function usePlantSamplesView() {
     plantSamplesData.map((s) => ({
       id: s.id,
       sampleCode: s.sampleCode,
+      varietyId: s.varietyId,
+      varietyName: s.varietyName,
       speciesId: s.speciesId,
-      speciesName: s.speciesName,
+      speciesName: s.speciesName || "",
       name: s.name,
-      uniqueCode: s.uniqueCode,
+      uniqueCode: s.sampleCode,
       ownershipUserName: s.ownershipUserName,
       ownershipDepartment: s.ownershipDepartment,
       originLocation: s.originLocation,
@@ -108,7 +118,11 @@ export function usePlantSamplesView() {
       status: s.status,
       icon: TestTube,
       color: "text-blue-600",
-      imageUrl: s.images?.[0],
+      images: s.images,
+      quantity: s.quantity || 0,
+      quantityUnit: s.quantityUnit || "units",
+      storageLocation: s.storageLocation,
+      viabilityStatus: s.viabilityStatus,
     })),
   );
 
@@ -221,6 +235,8 @@ export function usePlantSamplesView() {
         {
           id: newId,
           sampleCode: newId,
+          varietyId: "",
+          varietyName: "",
           speciesId: clean.speciesId,
           speciesName: matchedSpecies?.scientificName ?? "",
           name: clean.name,
@@ -235,6 +251,11 @@ export function usePlantSamplesView() {
           status: clean.status,
           icon: TestTube,
           color: "text-blue-600",
+          images: [],
+          quantity: 0,
+          quantityUnit: "units",
+          storageLocation: "",
+          viabilityStatus: "Unknown",
         },
       ]);
       toast.success(`Sample "${clean.name}" added`);

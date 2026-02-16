@@ -5,6 +5,7 @@
 import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
+import { plantSpeciesData } from "@/data/mockInventoryData";
 import { usePersistedState } from "@/lib/persistence";
 import {
     checkDuplicate,
@@ -15,38 +16,20 @@ import {
     sanitizeForm,
     throttleSubmit,
 } from "@/lib/validation";
+import type { PlantSpecies } from "@/types/inventory";
 import type { LucideIcon } from "lucide-react";
-import { Bean, Citrus, Flower2, Leaf, Vegan, Wheat } from "lucide-react";
+import { Bean, Citrus, Flower2, Leaf, Wheat } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export interface SpeciesItem {
-  id: string;
-  scientificName: string;
-  commonName: string;
-  khmerName?: string;
-  family: string;
-  growthType: string;
-  optimalTemp: string;
-  activeBatches: number;
-  totalPlants: number;
-  description: string;
+// Use PlantSpecies from types
+export type SpeciesItem = PlantSpecies & {
   icon: LucideIcon;
   color: string;
-  imageUrl?: string;
-  nativeRegion?: string;
-  lightRequirement?: string;
-  waterRequirement?: string;
-  soilType?: string;
-  humidity?: string;
-  propagation?: string;
-  maturityDays?: number;
-  maxHeight?: string;
-  tags?: string[];
-}
+};
 
 export interface SpeciesForm {
   commonName: string;
@@ -99,125 +82,12 @@ const EMPTY_FORM: SpeciesForm = {
   tags: "",
 };
 
-const SEED_DATA: SpeciesItem[] = [
-  {
-    id: "SP-001",
-    scientificName: "Solanum lycopersicum",
-    commonName: "Tomato",
-    khmerName: "ប៉េងប៉ោះ",
-    family: "Solanaceae",
-    growthType: "Annual",
-    optimalTemp: "20–25°C",
-    activeBatches: 1,
-    totalPlants: 150,
-    description:
-      "Widely cultivated edible fruit-bearing plant used in various research studies.",
-    icon: Citrus as LucideIcon,
-    color: "hsl(0, 72%, 51%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=600&h=400&fit=crop",
-  },
-  {
-    id: "SP-002",
-    scientificName: "Arabidopsis thaliana",
-    commonName: "Thale Cress",
-    khmerName: "ស្មៅថែល",
-    family: "Brassicaceae",
-    growthType: "Annual",
-    optimalTemp: "22–24°C",
-    activeBatches: 1,
-    totalPlants: 300,
-    description: "Model organism for plant biology and genetics research.",
-    icon: Flower2 as LucideIcon,
-    color: "hsl(145, 63%, 32%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop",
-  },
-  {
-    id: "SP-003",
-    scientificName: "Zea mays",
-    commonName: "Maize",
-    khmerName: "ពោត",
-    family: "Poaceae",
-    growthType: "Annual",
-    optimalTemp: "25–30°C",
-    activeBatches: 1,
-    totalPlants: 500,
-    description:
-      "Major cereal grain used in genetics, breeding, and biofuel research.",
-    icon: Wheat as LucideIcon,
-    color: "hsl(38, 92%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1551268831-81d0b7c7c1b8?w=600&h=400&fit=crop",
-  },
-  {
-    id: "SP-004",
-    scientificName: "Oryza sativa",
-    commonName: "Rice",
-    khmerName: "ស្រូវ",
-    family: "Poaceae",
-    growthType: "Annual",
-    optimalTemp: "25–35°C",
-    activeBatches: 1,
-    totalPlants: 200,
-    description: "Staple cereal crop and model monocot for genomics research.",
-    icon: Vegan as LucideIcon,
-    color: "hsl(80, 50%, 40%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1536304929831-774a1e21e4db?w=600&h=400&fit=crop",
-  },
-  {
-    id: "SP-005",
-    scientificName: "Nicotiana tabacum",
-    commonName: "Tobacco",
-    khmerName: "ថ្នាំជក់",
-    family: "Solanaceae",
-    growthType: "Annual",
-    optimalTemp: "20–30°C",
-    activeBatches: 1,
-    totalPlants: 45,
-    description:
-      "Commonly used in plant molecular biology and transient expression studies.",
-    icon: Leaf as LucideIcon,
-    color: "hsl(175, 65%, 35%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1515150144380-bca9f1650ed9?w=600&h=400&fit=crop",
-  },
-  {
-    id: "SP-006",
-    scientificName: "Glycine max",
-    commonName: "Soybean",
-    khmerName: "សណ្ដែកសៀង",
-    family: "Fabaceae",
-    growthType: "Annual",
-    optimalTemp: "20–30°C",
-    activeBatches: 0,
-    totalPlants: 0,
-    description:
-      "Important legume crop used in nitrogen fixation and protein research.",
-    icon: Bean as LucideIcon,
-    color: "hsl(210, 20%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1595855759920-86582396756a?w=600&h=400&fit=crop",
-  },
-  {
-    id: "SP-007",
-    scientificName: "Triticum aestivum",
-    commonName: "Wheat",
-    khmerName: "ស្រូវសាលី",
-    family: "Poaceae",
-    growthType: "Annual",
-    optimalTemp: "15–20°C",
-    activeBatches: 1,
-    totalPlants: 400,
-    description:
-      "Major global cereal crop, model for polyploidy and breeding research.",
-    icon: Wheat as LucideIcon,
-    color: "hsl(30, 60%, 45%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&h=400&fit=crop",
-  },
-];
+// Map mock data to include icons
+const SEED_DATA: SpeciesItem[] = plantSpeciesData.map((species) => ({
+  ...species,
+  icon: FAMILY_ICONS[species.family || "Other"]?.icon || Leaf,
+  color: FAMILY_ICONS[species.family || "Other"]?.color || "hsl(175, 65%, 35%)",
+}));
 
 // ─── Hook ──────────────────────────────────────────────────────────────────
 
@@ -249,22 +119,42 @@ export function usePlantSpeciesView() {
       sp.scientificName.toLowerCase().includes(q) ||
       sp.commonName.toLowerCase().includes(q) ||
       sp.id.toLowerCase().includes(q);
-    const matchesFamily = familyFilter === "all" || sp.family === familyFilter;
+    const matchesFamily =
+      familyFilter === "all" ||
+      sp.family === familyFilter ||
+      (sp.family === undefined && familyFilter === "Other");
     return matchesSearch && matchesFamily;
   });
 
-  const totalPlants = items.reduce((sum, sp) => sum + (sp.totalPlants ?? 0), 0);
-  const activeSpecies = items.filter((sp) => sp.activeBatches > 0).length;
+  const totalVarieties = items.reduce(
+    (sum, sp) => sum + (sp.varietyCount ?? 0),
+    0,
+  );
+  const totalSamples = items.reduce(
+    (sum, sp) => sum + (sp.sampleCount ?? 0),
+    0,
+  );
+  const totalQuantity = items.reduce(
+    (sum, sp) => sum + (sp.totalQuantity ?? 0),
+    0,
+  );
+  const activeSpecies = items.filter(
+    (sp) => sp.isActive && sp.varietyCount > 0,
+  ).length;
 
   const quickStats: Stat[] = [
-    { label: "Species", value: items.length, color: "primary" },
-    { label: "Active Species", value: activeSpecies, color: "primary" },
+    { label: "Total Species", value: items.length, color: "primary" },
+    { label: "Active", value: activeSpecies, color: "success" },
     {
-      label: "Total Plants",
-      value: totalPlants.toLocaleString(),
+      label: "Varieties",
+      value: totalVarieties.toLocaleString(),
+      color: "primary",
+    },
+    {
+      label: "Samples",
+      value: totalSamples.toLocaleString(),
       color: "muted",
     },
-    { label: "Families", value: families.length, color: "muted" },
   ];
 
   const isEditing = editingItem !== null;
@@ -300,12 +190,13 @@ export function usePlantSpeciesView() {
     setEditingItem(species);
     setForm({
       commonName: species.commonName,
+      khmerName: species.khmerName || "",
       scientificName: species.scientificName,
-      family: species.family,
-      growthType: species.growthType,
-      optimalTemp: species.optimalTemp,
-      description: species.description,
-      imageUrl: species.imageUrl || "",
+      family: species.family || "",
+      growthType: species.growthType || "Annual",
+      optimalTemp: species.optimalTemp || "",
+      description: species.description || "",
+      imageUrl: species.images?.[0] || "",
       nativeRegion: species.nativeRegion || "",
       lightRequirement: species.lightRequirement || "",
       waterRequirement: species.waterRequirement || "",
@@ -387,11 +278,12 @@ export function usePlantSpeciesView() {
                 ...s,
                 commonName: clean.commonName,
                 scientificName: clean.scientificName,
+                khmerName: clean.khmerName || undefined,
                 family: clean.family,
                 growthType: clean.growthType,
                 optimalTemp: clean.optimalTemp,
                 description: clean.description,
-                imageUrl: clean.imageUrl || undefined,
+                images: clean.imageUrl ? [clean.imageUrl] : s.images,
                 nativeRegion: clean.nativeRegion || undefined,
                 lightRequirement: clean.lightRequirement || undefined,
                 waterRequirement: clean.waterRequirement || undefined,
@@ -405,25 +297,32 @@ export function usePlantSpeciesView() {
                 tags: parsedTags.length > 0 ? parsedTags : undefined,
                 icon: fInfo.icon,
                 color: fInfo.color,
+                updatedAt: new Date().toISOString(),
               }
             : s,
         ),
       );
     } else {
-      const newId = `SP-${String(items.length + 1).padStart(3, "0")}`;
+      const newId = `SP-${String(items.length + 1).padStart(4, "0")}`;
       const newItem: SpeciesItem = {
         id: newId,
+        speciesCode: `SP-${String(items.length + 1).padStart(4, "0")}`,
         commonName: clean.commonName,
         scientificName: clean.scientificName,
+        khmerName: clean.khmerName || undefined,
         family: clean.family,
+        genus: clean.family, // Use family as genus for simplicity
         growthType: clean.growthType,
         optimalTemp: clean.optimalTemp,
         description: clean.description,
-        activeBatches: 0,
-        totalPlants: 0,
+        isActive: true,
+        varietyCount: 0,
+        sampleCount: 0,
+        totalQuantity: 0,
+        quantityUnit: "seeds",
         icon: fInfo.icon,
         color: fInfo.color,
-        imageUrl: clean.imageUrl || undefined,
+        images: clean.imageUrl ? [clean.imageUrl] : [],
         nativeRegion: clean.nativeRegion || undefined,
         lightRequirement: clean.lightRequirement || undefined,
         waterRequirement: clean.waterRequirement || undefined,
@@ -435,6 +334,8 @@ export function usePlantSpeciesView() {
           : undefined,
         maxHeight: clean.maxHeight || undefined,
         tags: parsedTags.length > 0 ? parsedTags : undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       setItems((prev) => [...prev, newItem]);
     }

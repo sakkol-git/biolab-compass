@@ -5,12 +5,21 @@
  * This file is pure declarative JSX — no useState, no business logic.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-import { Leaf, MapPin, Pencil, Plus, Trash2, User } from "lucide-react";
+import {
+    FlaskConical,
+    Leaf,
+    MapPin,
+    Pencil,
+    Plus,
+    Trash2,
+    User,
+} from "lucide-react";
 
 import EmptyState from "@/components/EmptyState";
 import AppLayout from "@/components/layout/AppLayout";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import PageHeader from "@/components/shared/PageHeader";
+import QuantityBadge from "@/components/shared/QuantityBadge";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
 import { ViewToggle } from "@/components/shared/ViewToggle";
@@ -105,7 +114,7 @@ const PlantVarieties = () => {
               return (
                 <ProductCard
                   key={item.id}
-                  image={item.imageUrl}
+                  image={item.images?.[0]}
                   fallbackImage={
                     <>
                       <Icon
@@ -119,17 +128,23 @@ const PlantVarieties = () => {
                     </>
                   }
                   title={item.name}
-                  subtitle={item.uniqueCode}
-                  id={item.uniqueCode}
+                  subtitle={item.varietyCode}
+                  id={item.varietyCode}
                   statusBadge={
-                    <Badge
-                      className={cn(
-                        "text-xs shrink-0",
-                        STATUS_COLORS[item.status] ?? "",
-                      )}
-                    >
-                      {item.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        className={cn(
+                          "text-xs shrink-0",
+                          STATUS_COLORS[item.status] ?? "",
+                        )}
+                      >
+                        {item.status}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <FlaskConical className="h-3 w-3" />
+                        {item.sampleCount}
+                      </Badge>
+                    </div>
                   }
                   meta={
                     [
@@ -162,6 +177,8 @@ const PlantVarieties = () => {
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Species</TableHead>
+                  <TableHead>Samples</TableHead>
+                  <TableHead>Quantity</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>Origin</TableHead>
                   <TableHead>Status</TableHead>
@@ -172,11 +189,23 @@ const PlantVarieties = () => {
                 {view.filteredItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">
-                      {item.uniqueCode}
+                      {item.varietyCode}
                     </TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="text-xs italic">
                       {item.speciesName}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <FlaskConical className="h-3 w-3" />
+                        {item.sampleCount}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <QuantityBadge
+                        quantity={item.totalQuantity}
+                        unit={item.quantityUnit}
+                      />
                     </TableCell>
                     <TableCell className="text-sm">
                       {item.ownershipUserName ?? "—"}

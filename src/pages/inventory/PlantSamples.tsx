@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import AppLayout from "@/components/layout/AppLayout";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import PageHeader from "@/components/shared/PageHeader";
+import QuantityBadge from "@/components/shared/QuantityBadge";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
 import { ViewToggle } from "@/components/shared/ViewToggle";
@@ -102,7 +103,7 @@ const PlantSamples = () => {
               return (
                 <ProductCard
                   key={item.id}
-                  image={item.imageUrl}
+                  image={item.images?.[0]}
                   fallbackImage={
                     <>
                       <Icon
@@ -116,8 +117,12 @@ const PlantSamples = () => {
                     </>
                   }
                   title={item.name}
-                  subtitle={item.uniqueCode}
-                  id={item.uniqueCode}
+                  subtitle={
+                    item.varietyName
+                      ? `${item.varietyName} • ${item.sampleCode}`
+                      : item.sampleCode
+                  }
+                  id={item.sampleCode}
                   statusBadge={
                     <Badge
                       className={cn(
@@ -130,6 +135,9 @@ const PlantSamples = () => {
                   }
                   meta={
                     [
+                      item.varietyName
+                        ? { label: "Variety:", value: item.varietyName }
+                        : null,
                       { label: "Species:", value: item.speciesName },
                       item.ownershipUserName
                         ? {
@@ -137,7 +145,9 @@ const PlantSamples = () => {
                             value: item.ownershipUserName,
                           }
                         : null,
-                      { icon: MapPin, value: item.originLocation },
+                      item.originLocation
+                        ? { icon: MapPin, value: item.originLocation }
+                        : null,
                     ].filter(Boolean) as any
                   }
                   tags={[]}
@@ -158,9 +168,11 @@ const PlantSamples = () => {
                 <TableRow>
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Variety</TableHead>
                   <TableHead>Species</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Storage</TableHead>
                   <TableHead>Owner</TableHead>
-                  <TableHead>Origin</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -169,17 +181,26 @@ const PlantSamples = () => {
                 {view.filteredItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">
-                      {item.uniqueCode}
+                      {item.sampleCode}
                     </TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell className="text-xs">
+                      {item.varietyName || "—"}
+                    </TableCell>
                     <TableCell className="text-xs italic">
                       {item.speciesName}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {item.ownershipUserName ?? "—"}
+                    <TableCell>
+                      <QuantityBadge
+                        quantity={item.quantity}
+                        unit={item.quantityUnit}
+                      />
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {item.storageLocation || "—"}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {item.originLocation}
+                      {item.ownershipUserName ?? "—"}
                     </TableCell>
                     <TableCell>
                       <Badge

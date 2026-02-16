@@ -19,66 +19,188 @@ export type EquipmentStatus =
   | "Maintenance"
   | "Retired";
 
+// ─── Conservation Status ────────────────────────────────────────────────────
+export type ConservationStatus = "LC" | "NT" | "VU" | "EN" | "CR" | "EW" | "EX";
+
 // ─── Plant Variety Status ───────────────────────────────────────────────────
 export type PlantVarietyStatus = "Active" | "Archived" | "Destroyed";
 
 // ─── Plant Sample Status (distinct from variety) ────────────────────────────
 export type PlantSampleStatus =
-  | "Active"
+  | "Available"
+  | "Reserved"
   | "In Testing"
   | "Consumed"
   | "Contaminated"
   | "Archived"
   | "Destroyed";
 
-// ─── Plant Variety ──────────────────────────────────────────────────────────
+// ─── Viability Status ───────────────────────────────────────────────────────
+export type ViabilityStatus = "High" | "Medium" | "Low" | "Unknown";
+
+// ─── Source Type ────────────────────────────────────────────────────────────
+export type SourceType = "Field" | "Lab" | "Purchase" | "Donation" | "Exchange";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HIERARCHICAL PLANT INVENTORY SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Plant Species (TOP LEVEL) ──────────────────────────────────────────────
+export interface PlantSpecies extends Auditable {
+  id: string;
+  speciesCode: string; // SP-0001, SP-0002, etc.
+  scientificName: string;
+  commonName: string;
+  khmerName?: string;
+
+  // Taxonomy
+  family?: string;
+  genus?: string;
+  species?: string;
+  synonyms?: string[];
+
+  // Conservation
+  conservationStatus?: ConservationStatus;
+
+  // Growing Information
+  growthType?: string; // Annual, Perennial, etc.
+  nativeRegion?: string;
+  lightRequirement?: string;
+  waterRequirement?: string;
+  soilType?: string;
+  humidity?: string;
+  optimalTemp?: string;
+  propagation?: string;
+  maturityDays?: number;
+  maxHeight?: string;
+
+  // Administrative
+  description?: string;
+  tags?: string[];
+  isActive: boolean;
+  images?: string[];
+
+  // Computed fields (read-only)
+  varietyCount: number;
+  sampleCount: number;
+  totalQuantity?: number; // Rollup of all sample quantities
+  quantityUnit?: string;
+
+  // Relations (lazy-loaded)
+  varieties?: PlantVariety[];
+}
+
+// ─── Plant Variety (MIDDLE LEVEL) ───────────────────────────────────────────
 export interface PlantVariety extends Auditable {
   id: string;
-  varietyCode: string;
+  varietyCode: string; // VAR-0001, VAR-0002, etc.
+
+  // Hierarchy (REQUIRED parent)
   speciesId: string;
-  speciesName: string;
+  speciesName?: string; // Denormalized for display
+
+  // Identification
   name: string;
-  uniqueCode: string;
+  cultivarName?: string;
+  uniqueCode?: string;
+
+  // Ownership
   ownershipUserId?: string;
   ownershipUserName?: string;
   ownershipDepartment?: string;
-  originLocation: string;
-  description?: string;
+
+  // Origin
+  originLocation?: string;
+  originCountry?: string;
+  originRegion?: string;
+  breeder?: string;
+  breedingYear?: number;
   dateBrought?: string;
+
+  // Genetic / trait metadata
+  description?: string;
+  traits?: string[];
+  germinationRate?: number; // 0-100
+  diseaseResistance?: string;
+  maturityDaysMin?: number;
+  maturityDaysMax?: number;
+  growthHabit?: string; // determinate, indeterminate, bush, vine
+
+  // Certification
+  isCertified?: boolean;
+  certificationBody?: string;
+
+  // Status
   status: PlantVarietyStatus;
   images?: string[];
   notes?: string;
-  // Genetic / trait metadata
-  traits?: string[];
-  germinationRate?: number;
-  diseaseResistance?: string;
-  maturityDays?: number;
+
+  // Quantity/Amount (aggregated from samples)
+  totalQuantity?: number;
+  availableQuantity?: number;
+  quantityUnit?: string; // seeds, grams, plants, ml
+
+  // Computed fields (read-only)
+  sampleCount: number;
+
+  // Relations (lazy-loaded)
+  species?: PlantSpecies;
+  samples?: PlantSample[];
 }
 
-// ─── Plant Sample ───────────────────────────────────────────────────────────
+// ─── Plant Sample (LOWEST LEVEL) ────────────────────────────────────────────
 export interface PlantSample extends Auditable {
   id: string;
-  sampleCode: string;
-  speciesId: string;
-  speciesName: string;
-  varietyId?: string;
-  varietyName?: string;
+  sampleCode: string; // SMPL-0001, SMPL-0002, etc.
+
+  // Hierarchy (REQUIRED parent)
+  varietyId: string;
+  varietyName?: string; // Denormalized for display
+  speciesId: string; // Denormalized (auto-populated from variety)
+  speciesName?: string; // Denormalized for display
+
+  // Identification
   name: string;
-  uniqueCode: string;
+  internalName?: string;
+  uniqueCode?: string;
+  description?: string;
+
+  // Ownership
   ownershipUserId?: string;
   ownershipUserName?: string;
   ownershipDepartment?: string;
-  originLocation: string;
-  description?: string;
+
+  // Physical quantity & storage (REQUIRED)
+  quantity: number;
+  quantityUnit: string; // seeds, grams, plants, ml, units, etc.
+  storageLocation?: string;
+  storageConditions?: string; // "4°C, 60% RH, dark"
+
+  // Source & Provenance
+  originLocation?: string;
+  collectionDate?: string;
   dateBrought?: string;
+  sourceType?: SourceType;
+  sourceReference?: string; // PO number, donor name, field ID, etc.
+
+  // Quality & Viability
+  viabilityStatus?: ViabilityStatus;
+  expiryDate?: string;
+  lastTestedAt?: string;
+
+  // Status & Reservation
   status: PlantSampleStatus;
+  reservedById?: number;
+  reservedAt?: string;
+
+  // Media & Notes
   images?: string[];
   notes?: string;
-  // Physical inventory metadata
-  quantity?: number;
-  quantityUnit?: string;
-  storageLocation?: string;
-  storageConditions?: string;
+  metadata?: Record<string, any>; // Flexible field for custom data
+
+  // Relations (lazy-loaded)
+  variety?: PlantVariety;
+  species?: PlantSpecies;
 }
 
 // ─── Chemical Log ───────────────────────────────────────────────────────────

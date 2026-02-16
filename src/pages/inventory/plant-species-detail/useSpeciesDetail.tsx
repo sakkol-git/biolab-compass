@@ -7,9 +7,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { speciesDetailData, type SpeciesDetail } from "@/data/mockDetailData";
+import { plantSamplesData, plantVarietiesData } from "@/data/mockInventoryData";
 import {
     Clock,
     Droplets,
+    FlaskConical,
     Flower2,
     Layers,
     Leaf,
@@ -32,7 +34,14 @@ interface UseSpeciesDetailResult {
 
 // ─── Config Assembly (pure transform) ────────────────────────────────────
 
-function assembleConfig(data: SpeciesDetail): SpeciesPageConfig {
+function assembleConfig(
+  data: SpeciesDetail,
+  speciesId: string,
+): SpeciesPageConfig {
+  // Get varieties and samples for this species
+  const varieties = plantVarietiesData.filter((v) => v.speciesId === speciesId);
+  const samples = plantSamplesData.filter((s) => s.speciesId === speciesId);
+
   return {
     header: {
       backTo: "/inventory/plant-species",
@@ -99,6 +108,18 @@ function assembleConfig(data: SpeciesDetail): SpeciesPageConfig {
         batches: data.associatedBatches,
         viewAllHref: `/plant-stock?species=${encodeURIComponent(data.scientificName)}`,
       },
+      {
+        kind: "varieties-list",
+        title: "Varieties",
+        icon: Sprout,
+        varieties: varieties,
+      },
+      {
+        kind: "samples-list",
+        title: "Samples",
+        icon: FlaskConical,
+        samples: samples,
+      },
     ],
 
     sidebarSections: [
@@ -148,7 +169,10 @@ export function useSpeciesDetail(): UseSpeciesDetailResult {
     return () => clearTimeout(timer);
   }, [id]);
 
-  const config = useMemo(() => (data ? assembleConfig(data) : null), [data]);
+  const config = useMemo(
+    () => (data && id ? assembleConfig(data, id) : null),
+    [data, id],
+  );
 
   if (loading) return { state: "loading", id, config: null };
   if (notFound || !data) return { state: "not-found", id, config: null };

@@ -6,7 +6,9 @@ import type { LucideIcon } from "lucide-react";
 import {
     ArrowLeftRight,
     BarChart3,
+    Beaker,
     BookOpen,
+    Boxes,
     DollarSign,
     FileText,
     FlaskConical,
@@ -19,6 +21,7 @@ import {
     Sprout,
     TestTubes,
     TrendingUp,
+    User,
     Users,
     Wrench,
 } from "lucide-react";
@@ -56,6 +59,18 @@ const INVENTORY_NAV: NavItem[] = [
     matchPaths: ["/inventory/plant-stock", "/inventory/products/stock"],
   },
   {
+    title: "Plant Varieties",
+    url: "/inventory/plant-varieties",
+    icon: Boxes,
+    matchPaths: ["/inventory/plant-varieties"],
+  },
+  {
+    title: "Plant Samples",
+    url: "/inventory/plant-samples",
+    icon: Beaker,
+    matchPaths: ["/inventory/plant-samples"],
+  },
+  {
     title: "Chemicals",
     url: "/inventory/chemicals",
     icon: FlaskConical,
@@ -78,6 +93,12 @@ const INVENTORY_NAV: NavItem[] = [
     url: "/inventory/users",
     icon: Users,
     matchPaths: ["/inventory/users"],
+  },
+  {
+    title: "My Profile",
+    url: "/inventory/profile",
+    icon: User,
+    matchPaths: ["/inventory/profile"],
   },
 ];
 
@@ -150,6 +171,12 @@ const BUSINESS_NAV: NavItem[] = [
     url: "/business/payments",
     icon: DollarSign,
     matchPaths: ["/business/payments"],
+  },
+  {
+    title: "Lab Services",
+    url: "/business/lab-services",
+    icon: Microscope,
+    matchPaths: ["/business/lab-services"],
   },
 ];
 

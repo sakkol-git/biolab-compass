@@ -15,7 +15,7 @@ interface ThemeProviderProps {
 export const ThemeProvider = ({
   children,
   defaultTheme = "system",
-  storageKey = "biolab-theme",
+  storageKey = "plantlab-theme",
   ...props
 }: ThemeProviderProps) => (
   <NextThemesProvider

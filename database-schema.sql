@@ -1,8 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════
--- BioLab Compass — PostgreSQL Database Schema (DDL)
+-- Plant Lap Laboratory — PostgreSQL Database Schema (DDL)
 -- ═══════════════════════════════════════════════════════════════════
--- Version: 1.0
--- Date: 2026-02-14
+-- Version: 2.0
+-- Date: 2026-02-16
 -- Database: PostgreSQL 14+
 -- Character Set: UTF-8
 -- Collation: en_US.UTF-8
@@ -115,6 +115,47 @@ CREATE TYPE enum_protocol_status AS ENUM (
   'Archived'
 );
 
+-- User Role Enums (NEW — RBAC)
+CREATE TYPE enum_user_role AS ENUM (
+  'Admin',
+  'Lab Manager',
+  'Lab Assistant'
+);
+
+-- Plant Variety/Sample Status
+CREATE TYPE enum_plant_variety_status AS ENUM (
+  'Active',
+  'Archived',
+  'Destroyed'
+);
+
+-- Lab Service Status
+CREATE TYPE enum_lab_service_status AS ENUM (
+  'Pending',
+  'In Progress',
+  'Completed',
+  'Delivered'
+);
+
+-- Lab Service Payment Status
+CREATE TYPE enum_service_payment_status AS ENUM (
+  'Unpaid',
+  'Partial',
+  'Paid'
+);
+
+-- Achievement Status
+CREATE TYPE enum_achievement_status AS ENUM (
+  'Draft',
+  'Published'
+);
+
+-- Chemical Log Action
+CREATE TYPE enum_chemical_action AS ENUM (
+  'add',
+  'reduce'
+);
+
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 2: CREATE INDEPENDENT TABLES (No FK dependencies)
 -- ═══════════════════════════════════════════════════════════════════
@@ -125,6 +166,7 @@ CREATE TABLE plant_species (
   species_code VARCHAR(20) NOT NULL UNIQUE,
   scientific_name VARCHAR(255) NOT NULL UNIQUE,
   common_name VARCHAR(255) NOT NULL,
+  khmer_name VARCHAR(255),
   family VARCHAR(100) NOT NULL,
   growth_type VARCHAR(50) NOT NULL,
   optimal_temp VARCHAR(50),
@@ -188,6 +230,35 @@ CREATE INDEX idx_protocol_deleted_at ON protocols(deleted_at) WHERE deleted_at I
 
 COMMENT ON TABLE protocols IS 'Standard Operating Procedures for lab processes';
 
+-- Users (Shared/Support Module) — Enhanced with RBAC and Profile
+CREATE TABLE users (
+  id BIGSERIAL PRIMARY KEY,
+  user_code VARCHAR(20) NOT NULL UNIQUE,
+  name VARCHAR(255) NOT NULL CHECK (LENGTH(name) > 0),
+  email VARCHAR(255) NOT NULL UNIQUE CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+  role enum_user_role NOT NULL DEFAULT 'Lab Assistant',
+  department VARCHAR(100) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive')),
+  profile_image_url VARCHAR(512),
+  phone VARCHAR(50),
+  bio TEXT,
+  last_active TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_user_code ON users(user_code);
+CREATE INDEX idx_user_email ON users(email);
+CREATE INDEX idx_user_role ON users(role);
+CREATE INDEX idx_user_department ON users(department);
+CREATE INDEX idx_user_status ON users(status);
+CREATE INDEX idx_users_deleted_at ON users(deleted_at) WHERE deleted_at IS NULL;
+
+COMMENT ON TABLE users IS 'Lab personnel accounts with roles and access control';
+COMMENT ON COLUMN users.user_code IS 'Business identifier (U-###)';
+COMMENT ON COLUMN users.status IS '"Active" or "Inactive" — deactivated users cannot perform actions';
+
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 3: BUSINESS MODULE TABLES
 -- ═══════════════════════════════════════════════════════════════════
@@ -227,6 +298,7 @@ CREATE TABLE contracts (
   id BIGSERIAL PRIMARY KEY,
   contract_code VARCHAR(20) NOT NULL UNIQUE,
   client_id BIGINT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+  client_name VARCHAR(255) NOT NULL,
   species_id BIGINT NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
   species_name VARCHAR(255) NOT NULL,
   common_name VARCHAR(255) NOT NULL,
@@ -258,6 +330,9 @@ CREATE INDEX idx_delivery_deadline ON contracts(delivery_deadline);
 CREATE INDEX idx_contracts_deleted_at ON contracts(deleted_at) WHERE deleted_at IS NULL;
 
 COMMENT ON TABLE contracts IS 'Seedling production contracts';
+COMMENT ON COLUMN contracts.client_name IS 'Denormalized from clients.company_name for performance';
+COMMENT ON COLUMN contracts.species_name IS 'Denormalized from plant_species.scientific_name for performance';
+COMMENT ON COLUMN contracts.common_name IS 'Denormalized from plant_species.common_name for performance';
 COMMENT ON COLUMN contracts.total_value IS 'Computed: quantity_ordered * unit_price';
 COMMENT ON COLUMN contracts.progress_pct IS 'Completion percentage (0-100)';
 
@@ -646,6 +721,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply trigger to all tables with updated_at
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_clients_updated_at BEFORE UPDATE ON clients FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_contracts_updated_at BEFORE UPDATE ON contracts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -658,7 +734,160 @@ CREATE TRIGGER update_protocols_updated_at BEFORE UPDATE ON protocols FOR EACH R
 CREATE TRIGGER update_lab_notebooks_updated_at BEFORE UPDATE ON lab_notebooks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ═══════════════════════════════════════════════════════════════════
--- STEP 7: SAMPLE DATA (Optional - for testing)
+-- STEP 7: NEW TABLES — Plant Varieties/Samples, Chemical Logs,
+--          Lab Services, Research Achievements
+-- ═══════════════════════════════════════════════════════════════════
+
+-- Plant Varieties (Sub-level under species)
+CREATE TABLE plant_varieties (
+  id BIGSERIAL PRIMARY KEY,
+  variety_code VARCHAR(20) NOT NULL UNIQUE,
+  species_id BIGINT NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
+  name VARCHAR(255) NOT NULL,
+  unique_code VARCHAR(50) NOT NULL UNIQUE,
+  ownership_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  ownership_user_name VARCHAR(255),
+  ownership_department VARCHAR(100),
+  origin_location VARCHAR(255) NOT NULL,
+  description TEXT,
+  date_brought DATE,
+  status enum_plant_variety_status NOT NULL DEFAULT 'Active',
+  images JSONB,
+  notes TEXT,
+  created_by BIGINT,
+  updated_by BIGINT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_variety_code ON plant_varieties(variety_code);
+CREATE INDEX idx_variety_species_id ON plant_varieties(species_id);
+CREATE INDEX idx_variety_unique_code ON plant_varieties(unique_code);
+CREATE INDEX idx_variety_ownership_user_id ON plant_varieties(ownership_user_id);
+CREATE INDEX idx_variety_status ON plant_varieties(status);
+CREATE INDEX idx_varieties_deleted_at ON plant_varieties(deleted_at) WHERE deleted_at IS NULL;
+
+COMMENT ON TABLE plant_varieties IS 'Plant varieties/cultivars belonging to a species';
+
+-- Plant Samples (Sub-level under species)
+CREATE TABLE plant_samples (
+  id BIGSERIAL PRIMARY KEY,
+  sample_code VARCHAR(20) NOT NULL UNIQUE,
+  species_id BIGINT NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
+  name VARCHAR(255) NOT NULL,
+  unique_code VARCHAR(50) NOT NULL UNIQUE,
+  ownership_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  ownership_user_name VARCHAR(255),
+  ownership_department VARCHAR(100),
+  origin_location VARCHAR(255) NOT NULL,
+  description TEXT,
+  date_brought DATE,
+  status enum_plant_variety_status NOT NULL DEFAULT 'Active',
+  images JSONB,
+  notes TEXT,
+  created_by BIGINT,
+  updated_by BIGINT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_sample_code ON plant_samples(sample_code);
+CREATE INDEX idx_sample_species_id ON plant_samples(species_id);
+CREATE INDEX idx_sample_unique_code ON plant_samples(unique_code);
+CREATE INDEX idx_sample_ownership_user_id ON plant_samples(ownership_user_id);
+CREATE INDEX idx_sample_status ON plant_samples(status);
+CREATE INDEX idx_samples_deleted_at ON plant_samples(deleted_at) WHERE deleted_at IS NULL;
+
+COMMENT ON TABLE plant_samples IS 'Plant samples belonging to a species';
+
+-- Chemical Quantity Logs (Audit trail for chemical adjustments)
+CREATE TABLE chemical_logs (
+  id BIGSERIAL PRIMARY KEY,
+  chemical_id BIGINT NOT NULL REFERENCES chemicals(id) ON DELETE CASCADE,
+  action_type enum_chemical_action NOT NULL,
+  amount DECIMAL(12,4) NOT NULL CHECK (amount > 0),
+  unit VARCHAR(20) NOT NULL,
+  previous_quantity VARCHAR(100),
+  new_quantity VARCHAR(100),
+  reason TEXT,
+  user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  user_name VARCHAR(255),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_chemical_log_chemical_id ON chemical_logs(chemical_id);
+CREATE INDEX idx_chemical_log_action_type ON chemical_logs(action_type);
+CREATE INDEX idx_chemical_log_user_id ON chemical_logs(user_id);
+CREATE INDEX idx_chemical_log_created_at ON chemical_logs(created_at);
+
+COMMENT ON TABLE chemical_logs IS 'Audit trail for chemical quantity changes (add/reduce)';
+
+-- Lab Services (Business Module)
+CREATE TABLE lab_services (
+  id BIGSERIAL PRIMARY KEY,
+  service_code VARCHAR(20) NOT NULL UNIQUE,
+  service_title VARCHAR(255) NOT NULL CHECK (LENGTH(service_title) > 0),
+  client_name VARCHAR(255) NOT NULL,
+  client_contact VARCHAR(255),
+  service_description TEXT NOT NULL,
+  assigned_staff JSONB,
+  start_date DATE,
+  end_date DATE,
+  status enum_lab_service_status NOT NULL DEFAULT 'Pending',
+  result_summary TEXT,
+  report_file_url VARCHAR(512),
+  service_fee DECIMAL(12,2) CHECK (service_fee >= 0),
+  payment_status enum_service_payment_status NOT NULL DEFAULT 'Unpaid',
+  notes TEXT,
+  created_by BIGINT,
+  updated_by BIGINT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_service_code ON lab_services(service_code);
+CREATE INDEX idx_service_status ON lab_services(status);
+CREATE INDEX idx_service_client_name ON lab_services(client_name);
+CREATE INDEX idx_service_payment_status ON lab_services(payment_status);
+CREATE INDEX idx_lab_services_deleted_at ON lab_services(deleted_at) WHERE deleted_at IS NULL;
+
+COMMENT ON TABLE lab_services IS 'Lab service requests from external clients';
+
+-- Research Achievements (User Module)
+CREATE TABLE research_achievements (
+  id BIGSERIAL PRIMARY KEY,
+  achievement_code VARCHAR(20) NOT NULL UNIQUE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL CHECK (LENGTH(title) > 0),
+  description TEXT,
+  image_url VARCHAR(512),
+  document_link VARCHAR(512),
+  achievement_date DATE NOT NULL,
+  status enum_achievement_status NOT NULL DEFAULT 'Draft',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_achievement_code ON research_achievements(achievement_code);
+CREATE INDEX idx_achievement_user_id ON research_achievements(user_id);
+CREATE INDEX idx_achievement_status ON research_achievements(status);
+CREATE INDEX idx_achievement_date ON research_achievements(achievement_date);
+CREATE INDEX idx_achievements_deleted_at ON research_achievements(deleted_at) WHERE deleted_at IS NULL;
+
+COMMENT ON TABLE research_achievements IS 'User research achievements and publications';
+
+-- Apply updated_at triggers to new tables
+CREATE TRIGGER update_plant_varieties_updated_at BEFORE UPDATE ON plant_varieties FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_plant_samples_updated_at BEFORE UPDATE ON plant_samples FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_lab_services_updated_at BEFORE UPDATE ON lab_services FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_research_achievements_updated_at BEFORE UPDATE ON research_achievements FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ═══════════════════════════════════════════════════════════════════
+-- STEP 8: SAMPLE DATA (Optional - for testing)
 -- ═══════════════════════════════════════════════════════════════════
 
 -- Insert a sample plant species

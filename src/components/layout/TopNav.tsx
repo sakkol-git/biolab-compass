@@ -1,17 +1,26 @@
-import { Bell, User, Menu, Package, Microscope, BarChart3, Search } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSidebarContext } from "./AppLayout";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import {
+    BarChart3,
+    Bell,
+    Menu,
+    Microscope,
+    Package,
+    Search,
+    User,
+} from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useSidebarContext } from "./AppLayout";
 
 const topSections = [
   {
@@ -37,6 +46,8 @@ const topSections = [
 const TopNav = () => {
   const { mobileOpen, setMobileOpen } = useSidebarContext();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <header className="h-16 bg-card/90 backdrop-blur-md border-b border-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-50 shadow-md">
@@ -48,17 +59,27 @@ const TopNav = () => {
           size="icon"
           className="lg:hidden shrink-0"
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={
+            mobileOpen ? "Close navigation menu" : "Open navigation menu"
+          }
           aria-expanded={mobileOpen}
         >
           <Menu className="h-5 w-5" />
         </Button>
 
         <NavLink to="/" className="flex items-center gap-2.5">
-          <img src="/favicon.svg" alt="BioLab Compass logo" className="w-9 h-9 rounded-lg object-contain shadow-sm" />
+          <img
+            src="/favicon.svg"
+            alt="Plant Lap Laboratory logo"
+            className="w-9 h-9 rounded-lg object-contain shadow-sm"
+          />
           <div className="hidden sm:block">
-            <span className="font-semibold text-foreground text-base">Biolab</span>
-            <span className="font-normal text-muted-foreground text-base ml-1">Compass</span>
+            <span className="font-semibold text-foreground text-base">
+              Plant Lap
+            </span>
+            <span className="font-normal text-muted-foreground text-base ml-1">
+              Laboratory
+            </span>
           </div>
         </NavLink>
       </div>
@@ -66,7 +87,10 @@ const TopNav = () => {
       {/* Right: Section Tabs + Actions */}
       <div className="flex items-center gap-4">
         {/* Desktop Section Tabs */}
-        <nav className="hidden md:flex items-center gap-1" aria-label="Main sections">
+        <nav
+          className="hidden md:flex items-center gap-1"
+          aria-label="Main sections"
+        >
           {topSections.map((section) => {
             const isActive = location.pathname.startsWith(section.matchPrefix);
             const Icon = section.icon;
@@ -78,7 +102,7 @@ const TopNav = () => {
                   "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150",
                   isActive
                     ? "bg-primary/10 text-primary"
-                    : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
+                    : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted",
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -93,7 +117,9 @@ const TopNav = () => {
           {/* Mobile Section Tabs */}
           <div className="flex md:hidden items-center gap-1">
             {topSections.map((section) => {
-              const isActive = location.pathname.startsWith(section.matchPrefix);
+              const isActive = location.pathname.startsWith(
+                section.matchPrefix,
+              );
               const Icon = section.icon;
               return (
                 <NavLink
@@ -103,7 +129,7 @@ const TopNav = () => {
                     "flex items-center justify-center h-10 w-10 rounded-lg transition-colors duration-150",
                     isActive
                       ? "bg-primary/10 text-primary"
-                      : "bg-transparent hover:bg-muted text-muted-foreground"
+                      : "bg-transparent hover:bg-muted text-muted-foreground",
                   )}
                   aria-label={section.title}
                 >
@@ -117,7 +143,11 @@ const TopNav = () => {
           <Button
             variant="outline"
             className="hidden sm:inline-flex items-center gap-2 text-muted-foreground text-sm h-9 px-3 w-56 justify-start"
-            onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+            onClick={() =>
+              document.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "k", metaKey: true }),
+              )
+            }
           >
             <Search className="h-4 w-4" />
             <span>Search...</span>
@@ -130,9 +160,17 @@ const TopNav = () => {
           <ThemeToggle />
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative" aria-label="Notifications — 3 unread">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            aria-label="Notifications — 3 unread"
+          >
             <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-semibold flex items-center justify-center rounded-full" aria-hidden="true">
+            <span
+              className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-semibold flex items-center justify-center rounded-full"
+              aria-hidden="true"
+            >
               3
             </span>
           </Button>
@@ -140,23 +178,41 @@ const TopNav = () => {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2.5 px-2.5 h-10">
+              <Button
+                variant="ghost"
+                className="flex items-center gap-2.5 px-2.5 h-10"
+              >
                 <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                   <User className="h-4 w-4 text-primary" />
                 </div>
                 <div className="text-left hidden lg:block">
-                  <p className="text-sm font-medium text-foreground leading-tight">Dr. Sarah Chen</p>
-                  <p className="text-xs text-muted-foreground leading-tight">Lab Manager</p>
+                  <p className="text-sm font-medium text-foreground leading-tight">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-tight">
+                    {user.role}
+                  </p>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                <div>
+                  <p className="font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground font-normal">
+                    {user.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/inventory/profile")}>
+                My Profile
+              </DropdownMenuItem>
               <DropdownMenuItem>Preferences</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive font-medium">Sign Out</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive font-medium">
+                Sign Out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

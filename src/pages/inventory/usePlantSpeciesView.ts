@@ -16,6 +16,7 @@ export interface SpeciesItem {
   id: string;
   scientificName: string;
   commonName: string;
+  khmerName?: string;
   family: string;
   growthType: string;
   optimalTemp: string;
@@ -38,6 +39,7 @@ export interface SpeciesItem {
 
 export interface SpeciesForm {
   commonName: string;
+  khmerName: string;
   scientificName: string;
   family: string;
   growthType: string;
@@ -68,6 +70,7 @@ export const FAMILY_ICONS: Record<string, { icon: LucideIcon; color: string }> =
 
 const EMPTY_FORM: SpeciesForm = {
   commonName: "",
+  khmerName: "",
   scientificName: "",
   family: "",
   growthType: "Annual",
@@ -90,6 +93,7 @@ const SEED_DATA: SpeciesItem[] = [
     id: "SP-001",
     scientificName: "Solanum lycopersicum",
     commonName: "Tomato",
+    khmerName: "ប៉េងប៉ោះ",
     family: "Solanaceae",
     growthType: "Annual",
     optimalTemp: "20–25°C",
@@ -106,6 +110,7 @@ const SEED_DATA: SpeciesItem[] = [
     id: "SP-002",
     scientificName: "Arabidopsis thaliana",
     commonName: "Thale Cress",
+    khmerName: "ស្មៅថែល",
     family: "Brassicaceae",
     growthType: "Annual",
     optimalTemp: "22–24°C",
@@ -121,6 +126,7 @@ const SEED_DATA: SpeciesItem[] = [
     id: "SP-003",
     scientificName: "Zea mays",
     commonName: "Maize",
+    khmerName: "ពោត",
     family: "Poaceae",
     growthType: "Annual",
     optimalTemp: "25–30°C",
@@ -137,6 +143,7 @@ const SEED_DATA: SpeciesItem[] = [
     id: "SP-004",
     scientificName: "Oryza sativa",
     commonName: "Rice",
+    khmerName: "ស្រូវ",
     family: "Poaceae",
     growthType: "Annual",
     optimalTemp: "25–35°C",
@@ -152,6 +159,7 @@ const SEED_DATA: SpeciesItem[] = [
     id: "SP-005",
     scientificName: "Nicotiana tabacum",
     commonName: "Tobacco",
+    khmerName: "ថ្នាំជក់",
     family: "Solanaceae",
     growthType: "Annual",
     optimalTemp: "20–30°C",
@@ -168,6 +176,7 @@ const SEED_DATA: SpeciesItem[] = [
     id: "SP-006",
     scientificName: "Glycine max",
     commonName: "Soybean",
+    khmerName: "សណ្ដែកសៀង",
     family: "Fabaceae",
     growthType: "Annual",
     optimalTemp: "20–30°C",
@@ -184,6 +193,7 @@ const SEED_DATA: SpeciesItem[] = [
     id: "SP-007",
     scientificName: "Triticum aestivum",
     commonName: "Wheat",
+    khmerName: "ស្រូវសាលី",
     family: "Poaceae",
     growthType: "Annual",
     optimalTemp: "15–20°C",
@@ -223,7 +233,7 @@ export function usePlantSpeciesView() {
     return matchesSearch && matchesFamily;
   });
 
-  const totalPlants = items.reduce((sum, sp) => sum + sp.totalPlants, 0);
+  const totalPlants = items.reduce((sum, sp) => sum + (sp.totalPlants ?? 0), 0);
   const activeSpecies = items.filter((sp) => sp.activeBatches > 0).length;
 
   const quickStats: Stat[] = [

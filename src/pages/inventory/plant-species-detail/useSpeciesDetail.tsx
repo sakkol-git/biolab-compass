@@ -39,7 +39,7 @@ function assembleConfig(data: SpeciesDetail): SpeciesPageConfig {
       backLabel: "All Species",
       icon: Leaf,
       iconColor: SPECIES_ICON_COLOR,
-      title: data.commonName,
+      title: data.commonName + (data.khmerName ? ` (${data.khmerName})` : ""),
       subtitle: data.scientificName,
       id: data.id,
     },

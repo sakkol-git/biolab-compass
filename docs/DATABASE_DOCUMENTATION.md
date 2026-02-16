@@ -4,9 +4,9 @@
 
 **Author:** Principal Software Architect / Database Engineer  
 **Date:** February 14, 2026  
-**Version:** 1.0  
+**Version:** 1.1 (Updated: February 14, 2026)  
 **Normalization:** 3NF (Third Normal Form)  
-**Database:** PostgreSQL (recommended) / MySQL 8.0+
+**Database:** PostgreSQL 14+ (recommended) / MySQL 8.0+
 
 ---
 
@@ -32,11 +32,14 @@
    - [5.3 Protocols](#53-protocols)
    - [5.4 Lab Notebooks](#54-lab-notebooks)
    - [5.5 Species Growth Profiles](#55-species-growth-profiles)
-6. [Enum Definitions](#6-enum-definitions)
-7. [Indexing Strategy](#7-indexing-strategy)
-8. [Data Integrity Rules](#8-data-integrity-rules)
-9. [API Payload Examples](#9-api-payload-examples)
-10. [Scalability Considerations](#10-scalability-considerations)
+6. Shared / Support Module
+   - [6.1 Users](#61-users)
+7. [Enum Definitions](#7-enum-definitions)
+8. [Indexing Strategy](#8-indexing-strategy)
+9. [Data Integrity Rules](#9-data-integrity-rules)
+10. [API Payload Examples](#10-api-payload-examples)
+11. [Scalability Considerations](#11-scalability-considerations)
+12. [Application Layer Field Mapping](#12-application-layer-field-mapping)
 
 ---
 
@@ -53,12 +56,14 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
 
 ### Total Entity Count
 
-**20 core tables** organized into 3 modules:
+**16 core tables** organized into 3 domain modules + 1 support module:
 
-- Business: 5 tables
-- Inventory: 5 tables
-- Research: 5 tables
-- Shared/Support: 5 tables (users, settings, attachments, tags, audit logs)
+- Business: 5 tables (clients, contracts, contract_milestones, payments, production_forecasts)
+- Inventory: 5 tables (plant_species, plant_batches, chemicals, equipment, inventory_transactions)
+- Research: 5 tables (experiments, growth_logs, protocols, lab_notebooks, species_growth_profiles)
+- Shared/Support: 1 table (users)
+
+> **Note:** Additional support tables (settings, attachments, tags, audit_logs) are planned for future phases but not yet implemented in the current application.
 
 ### Data Model Characteristics
 
@@ -78,21 +83,20 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
 └─────────────────────────────────────────────────────────────────────────┘
 
    ┌─────────────┐
-   │   clients   │
-   └──────┬──────┘
-          │ 1
-          │
-          │ N
-   ┌──────▼──────────┐           ┌──────────────────┐
-   │   contracts     ├──────────►│ plant_species    │
-   └──────┬──────────┘ N      1  └──────────────────┘
-          │ 1
-          ├───────────────┬──────────────────┐
-          │ N             │ N                │ N
-   ┌──────▼────────┐ ┌───▼──────────┐  ┌───▼─────────────────┐
-   │ payments      │ │contract_     │  │production_forecasts │
-   └───────────────┘ │milestones    │  └─────────────────────┘
-                     └──────────────┘
+   │   clients   │──────┐
+   └──────┬──────┘      │ client_name (denormalized)
+          │ 1            ▼
+          │             ┌────────────────┐           ┌──────────────────┐
+          │ N           │   contracts    ├──────────►│ plant_species    │
+          └────────────►│ (+ client_name)│ N      1  └──────────────────┘
+                        └──────┬─────────┘
+                               │ 1
+                               ├───────────────┬──────────────────┐
+                               │ N             │ N                │ N
+                        ┌──────▼────────┐ ┌───▼──────────┐  ┌───▼─────────────────┐
+                        │ payments      │ │contract_     │  │production_forecasts │
+                        └───────────────┘ │milestones    │  └─────────────────────┘
+                                          └──────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         INVENTORY MODULE                                 │
@@ -102,15 +106,20 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
    │  plant_species   │
    └────────┬─────────┘
             │ 1
-            │
-            │ N
-   ┌────────▼─────────┐           ┌────────────┐
-   │  plant_batches   ├──────────►│experiments │
-   └──────────────────┘ N      1  └────────────┘
+            ├────────────────────┬────────────────────┐
+            │ N                  │ N                  │ N
+   ┌────────▼─────────┐   ┌──────▼────────┐   ┌──────▼──────────┐
+   │  plant_batches   │   │ experiments  │   │   contracts     │
+   │(+species_name,   │   │(+species_name)│   │(+species_name,  │
+   │ common_name)     │   │               │   │ common_name)    │
+   └──────────────────┘   └───────────────┘   └─────────────────┘
 
-   ┌───────────┐      ┌───────────┐      ┌─────────────────┐
-   │ chemicals │      │ equipment │      │inv_transactions │
-   └───────────┘      └───────────┘      └─────────────────┘
+   ┌───────────┐      ┌───────────┐      ┌─────────────────┐         ┌─────────┐
+   │ chemicals │      │ equipment │      │inv_transactions ├────────►│  users  │
+   └───────────┘      └───────────┘      └────────┬────────┘ N    1  └─────────┘
+                                                   │ polymorphic
+                                                   ▼
+                                          plant | chemical | equipment
 
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         RESEARCH MODULE                                  │
@@ -130,7 +139,30 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
    │species_growth_       │
    │profiles (aggregate)  │
    └──────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    SHARED / SUPPORT MODULE                               │
+└─────────────────────────────────────────────────────────────────────────┘
+
+   ┌─────────┐
+   │  users  │──────► (referenced by created_by, updated_by in all tables)
+   └─────────┘
+
+**Notes:**
+- Denormalized fields: contracts.client_name, contracts.species_name/common_name
+- All domain tables have audit columns (created_by, updated_by) referencing users.id
+- inventory_transactions uses polymorphic associations (item_type + item_id)
 ```
+
+│ growth_logs │ │lab_notebooks│ │ protocols │
+└───────────────┘ └─────────────┘ └─────────────┘
+
+┌──────────────────────┐
+│species*growth* │
+│profiles (aggregate) │
+└──────────────────────┘
+
+````
 
 ---
 
@@ -204,6 +236,7 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
 | id                   | bigint (PK)   | Yes      | Auto-increment                           | Primary key                   | 1                                     |
 | contract_code        | varchar(20)   | Yes      | UNIQUE, Pattern: CON-###                 | Business identifier           | CON-001                               |
 | client_id            | bigint (FK)   | Yes      | FK → clients.id                          | Reference to client           | 3                                     |
+| client_name          | varchar(255)  | Yes      | Denormalized from clients                | Client company name (cached)  | Green Valley Farms                    |
 | species_id           | bigint (FK)   | Yes      | FK → plant_species.id                    | Plant species being produced  | 12                                    |
 | species_name         | varchar(255)  | Yes      | Denormalized from species                | Scientific name (cached)      | Solanum lycopersicum                  |
 | common_name          | varchar(255)  | Yes      | Denormalized from species                | Common name (cached)          | Tomato                                |
@@ -248,7 +281,7 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
 - `contract_code` auto-generated (format: CON-###)
 - `total_value` computed field: `quantity_ordered * unit_price`
 - `progress_pct` calculated from milestones or delivery progress
-- `species_name` and `common_name` denormalized for performance (updated when species changes)
+- `client_name`, `species_name`, and `common_name` denormalized for performance (updated via triggers when parent records change)
 - `status` transitions: Draft → Sent → Signed → In Production → Ready → Delivered
 - Cannot delete if payments exist (protect financial records)
 
@@ -427,7 +460,7 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
   "laborHours": 240,
   "estimatedCost": 3500.00
 }
-```
+````
 
 ---
 
@@ -931,25 +964,25 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
 
 **Fields:**
 
-| Field Name         | Type         | Required | Constraints               | Description                     | Example                            |
-| ------------------ | ------------ | -------- | ------------------------- | ------------------------------- | ---------------------------------- |
-| id                 | bigint (PK)  | Yes      | Auto-increment            | Primary key                     | 1                                  |
-| protocol_code      | varchar(20)  | Yes      | UNIQUE, Pattern: PROT-### | Business identifier             | PROT-001                           |
-| title              | varchar(255) | Yes      | Min 1 char                | Protocol title                  | Tomato Grafting Standard Procedure |
-| description        | text         | Yes      | Min 1 char                | Detailed description            | Step-by-step grafting procedure…   |
-| category           | varchar(100) | Yes      | —                         | Protocol category               | Propagation Techniques             |
-| version            | varchar(20)  | Yes      | —                         | Version number                  | 2.1                                |
-| status             | enum         | Yes      | See enum_protocol_status  | Protocol status                 | Active                             |
-| author             | varchar(255) | Yes      | —                         | Protocol author                 | Dr. Sarah Chen                     |
-| last_updated       | date         | Yes      | —                         | Last revision date              | 2025-12-15                         |
-| steps              | integer      | Yes      | > 0                       | Number of steps                 | 12                                 |
-| linked_experiments | integer      | No       | Default: 0, >= 0          | Count of experiments using this | 8                                  |
-| tags               | json         | No       | Array of strings          | Searchable tags                 | ["grafting","SOP","tomato"]        |
-| created_by         | bigint (FK)  | No       | FK → users.id             | Creator user ID                 | 9                                  |
-| updated_by         | bigint (FK)  | No       | FK → users.id             | Last modifier user ID           | 9                                  |
-| created_at         | timestamp    | Yes      | Auto-set                  | Creation timestamp              | 2024-05-10 11:00:00                |
-| updated_at         | timestamp    | Yes      | Auto-update               | Last update timestamp           | 2025-12-15 09:30:00                |
-| deleted_at         | timestamp    | No       | NULL when active          | Soft delete timestamp           | NULL                               |
+| Field Name         | Type         | Required | Constraints              | Description                     | Example                            |
+| ------------------ | ------------ | -------- | ------------------------ | ------------------------------- | ---------------------------------- |
+| id                 | bigint (PK)  | Yes      | Auto-increment           | Primary key                     | 1                                  |
+| protocol_code      | varchar(20)  | Yes      | UNIQUE, Pattern: PRT-### | Business identifier             | PRT-001                            |
+| title              | varchar(255) | Yes      | Min 1 char               | Protocol title                  | Tomato Grafting Standard Procedure |
+| description        | text         | Yes      | Min 1 char               | Detailed description            | Step-by-step grafting procedure…   |
+| category           | varchar(100) | Yes      | —                        | Protocol category               | Propagation Techniques             |
+| version            | varchar(20)  | Yes      | —                        | Version number                  | 2.1                                |
+| status             | enum         | Yes      | See enum_protocol_status | Protocol status                 | Active                             |
+| author             | varchar(255) | Yes      | —                        | Protocol author                 | Dr. Sarah Chen                     |
+| last_updated       | date         | Yes      | —                        | Last revision date              | 2025-12-15                         |
+| steps              | integer      | Yes      | > 0                      | Number of steps                 | 12                                 |
+| linked_experiments | integer      | No       | Default: 0, >= 0         | Count of experiments using this | 8                                  |
+| tags               | json         | No       | Array of strings         | Searchable tags                 | ["grafting","SOP","tomato"]        |
+| created_by         | bigint (FK)  | No       | FK → users.id            | Creator user ID                 | 9                                  |
+| updated_by         | bigint (FK)  | No       | FK → users.id            | Last modifier user ID           | 9                                  |
+| created_at         | timestamp    | Yes      | Auto-set                 | Creation timestamp              | 2024-05-10 11:00:00                |
+| updated_at         | timestamp    | Yes      | Auto-update              | Last update timestamp           | 2025-12-15 09:30:00                |
+| deleted_at         | timestamp    | No       | NULL when active         | Soft delete timestamp           | NULL                               |
 
 **Relationships:**
 
@@ -966,7 +999,7 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
 
 **Business Rules:**
 
-- `protocol_code` auto-generated (format: PROT-###)
+- `protocol_code` auto-generated (format: PRT-###)
 - `version` incremented when protocol updated
 - `status` values: Draft, Active, Archived
 - Active protocols referenced by experiments; cannot delete if `linked_experiments > 0`
@@ -1071,11 +1104,69 @@ BioLab Compass is a comprehensive laboratory management system for plant researc
 
 ---
 
-## 6. ENUM DEFINITIONS
+## 6. SHARED / SUPPORT MODULE
+
+### 6.1 USERS
+
+**Table Name:** `users`
+
+**Purpose:** Manage lab personnel accounts, roles, and access control.
+
+**Fields:**
+
+| Field Name  | Type         | Required | Constraints            | Description             | Example                   |
+| ----------- | ------------ | -------- | ---------------------- | ----------------------- | ------------------------- |
+| id          | bigint (PK)  | Yes      | Auto-increment         | Primary key             | 1                         |
+| user_code   | varchar(20)  | Yes      | UNIQUE, Pattern: U-### | Business identifier     | U-001                     |
+| name        | varchar(255) | Yes      | Min 1 char             | Full name               | Dr. Sarah Chen            |
+| email       | varchar(255) | Yes      | UNIQUE, Valid email    | Institutional email     | sarah.chen@university.edu |
+| role        | varchar(100) | Yes      | —                      | Job role / title        | Lab Manager               |
+| department  | varchar(100) | Yes      | —                      | Department affiliation  | Agricultural Sciences     |
+| status      | varchar(20)  | Yes      | 'Active' or 'Inactive' | Account status          | Active                    |
+| last_active | timestamp    | No       | —                      | Last activity timestamp | 2026-02-14 10:28:00       |
+| created_at  | timestamp    | Yes      | Auto-set on insert     | Account creation        | 2025-01-01 09:00:00       |
+| updated_at  | timestamp    | Yes      | Auto-update on change  | Last update             | 2026-02-14 10:28:00       |
+| deleted_at  | timestamp    | No       | NULL when active       | Soft delete timestamp   | NULL                      |
+
+**Relationships:**
+
+- Referenced by `created_by` / `updated_by` FK columns across all domain tables
+- **1:N** → `inventory_transactions` (one user performs many transactions)
+
+**Indexes:**
+
+- Primary: `PRIMARY KEY (id)`
+- Unique: `UNIQUE INDEX idx_user_code ON users(user_code)`
+- Unique: `UNIQUE INDEX idx_user_email ON users(email)`
+- Filter: `INDEX idx_user_role ON users(role)`
+- Filter: `INDEX idx_user_department ON users(department)`
+- Filter: `INDEX idx_user_status ON users(status)`
+- Soft Delete: `INDEX idx_users_deleted_at ON users(deleted_at)` (partial: WHERE deleted_at IS NULL)
+
+**Business Rules:**
+
+- `user_code` auto-generated (format: U-###)
+- `email` must be unique (institutional email)
+- Deactivated users (`status = 'Inactive'`) cannot perform actions but records are retained
+- Cannot hard delete users referenced by audit columns (`created_by`, `updated_by`)
+
+**Predefined Roles:**
+
+| Role               | Permissions                                     |
+| ------------------ | ----------------------------------------------- |
+| Lab Manager        | Full CRUD on all entities, user management      |
+| Professor          | Full CRUD on research, read access to inventory |
+| Research Assistant | CRUD on assigned experiments, read inventory    |
+| Lab Technician     | CRUD on inventory, read research                |
+| PhD Student        | CRUD on assigned experiments, limited inventory |
+
+---
+
+## 7. ENUM DEFINITIONS
 
 All enum types with their allowed values:
 
-### 6.1 Business Module Enums
+### 7.1 Business Module Enums
 
 ```sql
 -- Client Type
@@ -1124,7 +1215,7 @@ CREATE TYPE enum_milestone_status AS ENUM (
 );
 ```
 
-### 6.2 Inventory Module Enums
+### 7.2 Inventory Module Enums
 
 ```sql
 -- Hazard Level (Chemicals)
@@ -1163,7 +1254,7 @@ CREATE TYPE enum_item_type AS ENUM (
 );
 ```
 
-### 6.3 Research Module Enums
+### 7.3 Research Module Enums
 
 ```sql
 -- Experiment Status
@@ -1202,9 +1293,9 @@ CREATE TYPE enum_protocol_status AS ENUM (
 
 ---
 
-## 7. INDEXING STRATEGY
+## 8. INDEXING STRATEGY
 
-### 7.1 Index Categories
+### 8.1 Index Categories
 
 **Primary Keys:**
 
@@ -1237,7 +1328,7 @@ CREATE TYPE enum_protocol_status AS ENUM (
 - `(experiment_id, week_number)` on `growth_logs` for uniqueness
 - `(item_type, item_id)` on `inventory_transactions` for polymorphic lookups
 
-### 7.2 Performance Recommendations
+### 8.2 Performance Recommendations
 
 - **Avoid over-indexing:** Monitor query performance; remove unused indexes
 - **Use covering indexes** for frequently accessed column combinations
@@ -1247,9 +1338,9 @@ CREATE TYPE enum_protocol_status AS ENUM (
 
 ---
 
-## 8. DATA INTEGRITY RULES
+## 9. DATA INTEGRITY RULES
 
-### 8.1 Foreign Key Constraints
+### 9.1 Foreign Key Constraints
 
 **Cascading Deletes:**
 
@@ -1262,7 +1353,7 @@ CREATE TYPE enum_protocol_status AS ENUM (
 - `experiments.species_id` → `plant_species.id` (ON DELETE RESTRICT)
 - Prevents orphan records and maintains referential integrity
 
-### 8.2 Check Constraints
+### 9.2 Check Constraints
 
 ```sql
 -- Quantity constraints
@@ -1293,7 +1384,7 @@ ALTER TABLE growth_logs
   ADD CONSTRAINT chk_health_score CHECK (health_score >= 1 AND health_score <= 10);
 ```
 
-### 8.3 Triggers
+### 9.3 Triggers
 
 **Auto-Update Computed Fields:**
 
@@ -1327,7 +1418,7 @@ CREATE TRIGGER log_inventory_change
   FOR EACH ROW EXECUTE FUNCTION create_transaction_log();
 ```
 
-### 8.4 Soft Delete Implementation
+### 9.4 Soft Delete Implementation
 
 All core tables include `deleted_at` timestamp column:
 
@@ -1338,9 +1429,9 @@ All core tables include `deleted_at` timestamp column:
 
 ---
 
-## 9. API PAYLOAD EXAMPLES
+## 10. API PAYLOAD EXAMPLES
 
-### 9.1 CREATE Operations
+### 10.1 CREATE Operations
 
 **Create Client:**
 
@@ -1466,7 +1557,7 @@ Response:
 }
 ```
 
-### 9.2 UPDATE Operations
+### 10.2 UPDATE Operations
 
 **Update Contract Status:**
 
@@ -1547,27 +1638,36 @@ Response:
 
 ---
 
-## 10. SCALABILITY CONSIDERATIONS
+## 11. SCALABILITY CONSIDERATIONS
 
-### 10.1 Data Volume Projections
+### 11.1 Data Volume Projections
 
 **Expected Growth (5 years):**
 
-- Clients: ~500 records
-- Contracts: ~2,000 records
-- Payments: ~8,000 records
-- Plant Species: ~100 records
-- Plant Batches: ~5,000 records
-- Chemicals: ~500 records
-- Equipment: ~300 records
-- Experiments: ~1,000 records
-- Growth Logs: ~50,000 records (50 logs/experiment avg)
-- Lab Notebooks: ~10,000 records
-- Inventory Transactions: ~100,000 records
+- **Business Module:**
+  - Clients: ~500 records
+  - Contracts: ~2,000 records
+  - Contract Milestones: ~10,000 records
+  - Payments: ~8,000 records
+  - Production Forecasts: ~500 records
+- **Inventory Module:**
+  - Plant Species: ~100 records
+  - Plant Batches: ~5,000 records
+  - Chemicals: ~500 records
+  - Equipment: ~300 records
+  - Inventory Transactions: ~100,000 records
+- **Research Module:**
+  - Experiments: ~1,000 records
+  - Growth Logs: ~50,000 records (50 logs/experiment avg)
+  - Protocols: ~100 records
+  - Lab Notebooks: ~10,000 records
+  - Species Growth Profiles: ~100 records (1 per species)
+- **Shared/Support:**
+  - Users: ~50 records
 
 **Total Database Size (estimated):** ~2-5 GB
 
-### 10.2 Performance Optimization
+### 11.2 Performance Optimization
 
 **Query Optimization:**
 
@@ -1586,7 +1686,7 @@ Response:
 - Maintain summary statistics in `species_growth_profiles`
 - Keep financial records (contracts, payments) indefinitely (regulatory compliance)
 
-### 10.3 Database Sharding (Future)
+### 11.3 Database Sharding (Future)
 
 **Sharding Strategy (if needed at scale):**
 
@@ -1594,7 +1694,7 @@ Response:
 - Geographic sharding (if multi-lab deployment)
 - Functional sharding (business vs inventory vs research schemas)
 
-### 10.4 Backup & Disaster Recovery
+### 11.4 Backup & Disaster Recovery
 
 **Backup Schedule:**
 
@@ -1610,17 +1710,156 @@ Response:
 
 ---
 
+## 12. APPLICATION LAYER FIELD MAPPING
+
+This section documents how TypeScript/JavaScript field names in the application layer map to SQL column names.
+
+### 12.1 Naming Convention
+
+The application uses **camelCase** for all identifiers in TypeScript interfaces and JSON APIs. The database uses **snake_case** for column names. The API layer performs automatic transformation between the two conventions.
+
+### 12.2 Business Identifier Fields
+
+All entities have both a numeric primary key (`id`) and a human-readable business code (`*_code`):
+
+| SQL Columns                              | TypeScript Field                       | Example SQL Value                  | Example TS Value                           |
+| ---------------------------------------- | -------------------------------------- | ---------------------------------- | ------------------------------------------ |
+| `id` (bigint), `client_code` (varchar)   | `id` (string)                          | `id=15`, `client_code='CLT-015'`   | `id: "CLT-015"`                            |
+| `id` (bigint), `contract_code` (varchar) | `id` (string), `contractCode` (string) | `id=42`, `contract_code='CON-042'` | `id: "CON-042"`, `contractCode: "CON-042"` |
+
+**Application Convention:** The TS `id` field corresponds to the SQL `*_code` column (not the numeric PK). When inserting/updating via API, the application references entities by their code (e.g., `"CLT-001"`), and the database resolves this to the numeric PK via a JOIN or subquery.
+
+### 12.3 Timestamp Fields
+
+| SQL Column   | TypeScript Field | SQL Type    | TS Type          | Format                   |
+| ------------ | ---------------- | ----------- | ---------------- | ------------------------ |
+| `created_at` | `createdAt`      | `timestamp` | `string`         | ISO 8601 (UTC)           |
+| `updated_at` | `updatedAt`      | `timestamp` | `string`         | ISO 8601 (UTC)           |
+| `deleted_at` | `deletedAt`      | `timestamp` | `string \| null` | ISO 8601 (UTC) or `null` |
+
+**Example:** SQL `2026-02-14 10:30:00` → TS `"2026-02-14T10:30:00Z"`
+
+### 12.4 Chemical-Specific Mappings
+
+The `chemicals` table has several shortened field names in the application layer:
+
+| SQL Column          | TypeScript Field | Notes                            |
+| ------------------- | ---------------- | -------------------------------- |
+| `cas_number`        | `cas`            | Shortened for conciseness        |
+| `expiry_date`       | `expiry`         | Date fields use simplified names |
+| `days_until_expiry` | `daysLeft`       | Clearer semantic meaning         |
+| `hazard_level`      | `hazard`         | Enum values unchanged            |
+| `ghs_codes`         | `ghs`            | JSON array of GHS codes          |
+
+**TS Type:** `ghs: string[]` (e.g., `["GHS05", "GHS07"]`)  
+**SQL Type:** `ghs_codes JSONB` (e.g., `["GHS05", "GHS07"]`)
+
+### 12.5 Batch/Stock Mappings
+
+Plant batches (stock) use different field names in list vs detail views:
+
+| SQL Column     | List Item Field (`StockItem`) | Detail Field (`BatchDetail`) |
+| -------------- | ----------------------------- | ---------------------------- |
+| `species_name` | `species`                     | `species`                    |
+| `common_name`  | `commonName`                  | `commonName`                 |
+| `stage`        | `stage`                       | `stage`                      |
+| `species_id`   | _(not present)_               | `speciesId`                  |
+
+Detail views include FK references (`speciesId`) while list views omit them for performance.
+
+### 12.6 Audit Fields
+
+Infrastructure audit fields are present in SQL but typically **not exposed** in TypeScript client interfaces:
+
+| SQL Column   | Present in TS Interface? | Notes                                         |
+| ------------ | ------------------------ | --------------------------------------------- |
+| `created_by` | ❌ No                    | Server-side only (set from session context)   |
+| `updated_by` | ❌ No                    | Server-side only                              |
+| `deleted_at` | ❌ No                    | Handled by soft-delete flag                   |
+| `is_active`  | ❌ No                    | Implicitly determined by `deleted_at IS NULL` |
+
+These fields are managed by the backend and not directly manipulated by the frontend.
+
+### 12.7 Denormalized Display Fields
+
+Several tables cache denormalized fields for performance:
+
+| Table           | Denormalized Field             | Source                                            | Maintenance               |
+| --------------- | ------------------------------ | ------------------------------------------------- | ------------------------- |
+| `contracts`     | `client_name`                  | `clients.company_name`                            | Trigger on clients update |
+| `contracts`     | `species_name`, `common_name`  | `plant_species.*`                                 | Trigger on species update |
+| `payments`      | `contract_code`, `client_name` | `contracts.contract_code`, `clients.company_name` | Immutable (set on insert) |
+| `plant_batches` | `species_name`, `common_name`  | `plant_species.*`                                 | Trigger on species update |
+| `experiments`   | `species_name`, `common_name`  | `plant_species.*`                                 | Trigger on species update |
+
+**Consistency Rule:** All denormalized fields are kept in sync via database triggers. Application code should **not** manually update these fields.
+
+### 12.8 Polymorphic Transactions
+
+`inventory_transactions` uses polymorphic associations:
+
+| SQL Columns                    | Purpose                                                          |
+| ------------------------------ | ---------------------------------------------------------------- |
+| `item_type` (`enum_item_type`) | Discriminator: `'plant'`, `'chemical'`, `'equipment'`, `'other'` |
+| `item_id` (bigint, nullable)   | Foreign key to specific table (resolved dynamically)             |
+| `item_name` (varchar)          | Cached display name (denormalized)                               |
+
+**Application Pattern:**
+
+```typescript
+{
+  itemType: "plant",
+  itemId: 42,  // FK to plant_batches.id
+  itemName: "Tomato Seedlings (Batch #127)"
+}
+```
+
+### 12.9 Decimal/Currency Fields
+
+Financial and measurement fields use different representations:
+
+| SQL Type        | TS Type              | Display Format   | Example                   |
+| --------------- | -------------------- | ---------------- | ------------------------- |
+| `decimal(12,2)` | `number`             | Numeric value    | `12500.00` → `12500`      |
+| `decimal(10,2)` | `string` (equipment) | Formatted string | `4200.00` → `"$4,200.00"` |
+
+**Equipment Exception:** `purchasePrice` and `currentValue` are transmitted as formatted strings (including currency symbol) for UI display convenience.
+
+### 12.10 Complete Field Name Reference
+
+**Common patterns:**
+
+- SQL `snake_case` → TS `camelCase`
+- SQL `*_id` → TS `*Id`
+- SQL `*_at` → TS `*At`
+- SQL `*_pct` → TS `*Pct`
+- SQL `avg_*` → TS `avg*`
+
+**Exceptions to auto-conversion:**
+
+| SQL                         | TS         | Reason                     |
+| --------------------------- | ---------- | -------------------------- |
+| `cas_number`                | `cas`      | Abbreviated                |
+| `expiry_date`               | `expiry`   | Simplified                 |
+| `days_until_expiry`         | `daysLeft` | Semantic clarity           |
+| `hazard_level`              | `hazard`   | Simplified                 |
+| `ghs_codes`                 | `ghs`      | Abbreviated                |
+| `species_name` (in batches) | `species`  | Context-specific shorthand |
+
+---
+
 ## APPENDIX A: Migration Scripts
 
 **Initial Schema Creation (PostgreSQL):**
 
 ```sql
--- Create enums first (see Section 6)
+-- Create enums first (see Section 7)
 -- Then create tables in dependency order:
 
--- 1. Independent tables
+-- 1. Independent tables (no FK dependencies)
 CREATE TABLE plant_species (...);
 CREATE TABLE protocols (...);
+CREATE TABLE users (...); -- Shared/Support module
 
 -- 2. Dependent tables (Business)
 CREATE TABLE clients (...);
@@ -1633,7 +1872,7 @@ CREATE TABLE production_forecasts (...);
 CREATE TABLE plant_batches (...); -- FK to plant_species
 CREATE TABLE chemicals (...);
 CREATE TABLE equipment (...);
-CREATE TABLE inventory_transactions (...);
+CREATE TABLE inventory_transactions (...); -- FK to users
 
 -- 4. Dependent tables (Research)
 CREATE TABLE experiments (...); -- FK to plant_species
@@ -1641,7 +1880,12 @@ CREATE TABLE growth_logs (...); -- FK to experiments
 CREATE TABLE lab_notebooks (...); -- FK to experiments
 CREATE TABLE species_growth_profiles (...); -- FK to plant_species
 
--- 5. Add indexes, triggers, constraints
+-- 5. Add triggers for denormalized fields
+-- Update client_name in contracts when clients.company_name changes
+-- Update species_name/common_name in contracts, batches, experiments when plant_species changes
+-- Update computed aggregates (total_contracts, total_value, active_batches, total_plants)
+
+-- 6. Add other indexes, constraints for performance
 ```
 
 ---
@@ -1657,7 +1901,8 @@ CREATE TABLE species_growth_profiles (...); -- FK to plant_species
 **Denormalization Exceptions (intentional for performance):**
 
 - `contract_code`, `client_name` in `payments` (reporting performance)
-- `species_name`, `common_name` in `contracts`, `experiments`, `plant_batches` (avoid joins)
+- `client_name`, `species_name`, `common_name` in `contracts` (avoid joins)
+- `species_name`, `common_name` in `experiments`, `plant_batches`, `species_growth_profiles` (avoid joins)
 - Computed fields: `total_contracts`, `total_value`, `progress_pct` (dashboard performance)
 
 All denormalized fields updated via triggers to maintain consistency.
@@ -1694,9 +1939,10 @@ All denormalized fields updated via triggers to maintain consistency.
 
 ## DOCUMENT REVISION HISTORY
 
-| Version | Date       | Author                       | Changes                                                        |
-| ------- | ---------- | ---------------------------- | -------------------------------------------------------------- |
-| 1.0     | 2026-02-14 | Principal Software Architect | Initial database documentation based on UI reverse-engineering |
+| Version | Date       | Author                       | Changes                                                                                                                                                                                                                                                                              |
+| ------- | ---------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1.0     | 2026-02-14 | Principal Software Architect | Initial database documentation based on UI reverse-engineering                                                                                                                                                                                                                       |
+| 1.1     | 2026-02-14 | Principal Software Architect | Added Users table (Section 6). Added `client_name` to contracts table. Fixed protocol code pattern (PRT-### not PROT-###). Updated entity count (16 tables). Added Application Layer Field Mapping (Section 12). Renumbered sections 7–11. Updated ER diagram and migration scripts. |
 
 ---
 

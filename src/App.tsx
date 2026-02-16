@@ -9,9 +9,12 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Chemicals from "./pages/inventory/Chemicals";
 import Dashboard from "./pages/inventory/Dashboard";
 import Equipment from "./pages/inventory/Equipment";
+import PlantSamples from "./pages/inventory/PlantSamples";
 import PlantSpecies from "./pages/inventory/PlantSpecies";
 import PlantStock from "./pages/inventory/PlantStock";
+import PlantVarieties from "./pages/inventory/PlantVarieties";
 import Transactions from "./pages/inventory/Transactions";
+import UserProfile from "./pages/inventory/UserProfile";
 import Users from "./pages/inventory/Users";
 
 // Inventory detail pages
@@ -34,6 +37,7 @@ import Business from "./pages/business/Business";
 import Clients from "./pages/business/Clients";
 import ContractDetail from "./pages/business/ContractDetail";
 import Contracts from "./pages/business/Contracts";
+import LabServices from "./pages/business/LabServices";
 import Payments from "./pages/business/Payments";
 import ProductionPlanner from "./pages/business/ProductionPlanner";
 
@@ -42,7 +46,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ThemeProvider defaultTheme="system" storageKey="biolab-theme">
+  <ThemeProvider defaultTheme="system" storageKey="plantlab-theme">
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
@@ -57,6 +61,11 @@ const App = () => (
             <Route path="/inventory/plant-species" element={<PlantSpecies />} />
             <Route path="/inventory/plant-stock" element={<PlantStock />} />
             <Route
+              path="/inventory/plant-varieties"
+              element={<PlantVarieties />}
+            />
+            <Route path="/inventory/plant-samples" element={<PlantSamples />} />
+            <Route
               path="/inventory/plants"
               element={<Navigate to="/inventory/plant-species" replace />}
             />
@@ -64,6 +73,7 @@ const App = () => (
             <Route path="/inventory/equipment" element={<Equipment />} />
             <Route path="/inventory/transactions" element={<Transactions />} />
             <Route path="/inventory/users" element={<Users />} />
+            <Route path="/inventory/profile" element={<UserProfile />} />
 
             {/* Inventory Product Detail Routes */}
             <Route
@@ -156,6 +166,7 @@ const App = () => (
               element={<ContractDetail />}
             />
             <Route path="/business/payments" element={<Payments />} />
+            <Route path="/business/lab-services" element={<LabServices />} />
 
             {/* ── Catch-all ── */}
             <Route path="*" element={<NotFound />} />

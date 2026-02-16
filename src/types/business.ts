@@ -2,11 +2,34 @@
 // BUSINESS MODULE — TypeScript Interfaces
 // ═══════════════════════════════════════════════════════════════════════════
 
-export type ContractStatus = "Draft" | "Sent" | "Signed" | "In Production" | "Ready" | "Delivered" | "Cancelled";
-export type ClientType = "Farm Owner" | "Investor" | "Government" | "NGO" | "Research Partner";
+export type ContractStatus =
+  | "Draft"
+  | "Sent"
+  | "Signed"
+  | "In Production"
+  | "Ready"
+  | "Delivered"
+  | "Cancelled";
+export type ClientType =
+  | "Farm Owner"
+  | "Investor"
+  | "Government"
+  | "NGO"
+  | "Research Partner";
 export type PaymentStatus = "Pending" | "Received" | "Overdue" | "Cancelled";
 export type PaymentType = "Deposit" | "Milestone" | "Final" | "Refund";
-export type MilestoneStatus = "Pending" | "On Track" | "At Risk" | "Completed" | "Missed";
+export type MilestoneStatus =
+  | "Pending"
+  | "On Track"
+  | "At Risk"
+  | "Completed"
+  | "Missed";
+export type LabServiceStatus =
+  | "Pending"
+  | "In Progress"
+  | "Completed"
+  | "Delivered";
+export type ServicePaymentStatus = "Unpaid" | "Partial" | "Paid";
 
 export interface Client {
   id: string;
@@ -96,4 +119,24 @@ export interface ProductionForecast {
   propagationMethod: string;
   createdAt: string;
   calculatedBy: string;
+}
+
+// ─── Lab Service ────────────────────────────────────────────────────────────
+export interface LabService {
+  id: string;
+  serviceCode: string;
+  serviceTitle: string;
+  clientName: string;
+  clientContact?: string;
+  serviceDescription: string;
+  assignedStaff: string[];
+  startDate?: string;
+  endDate?: string;
+  status: LabServiceStatus;
+  resultSummary?: string;
+  reportFileUrl?: string;
+  serviceFee?: number;
+  paymentStatus: ServicePaymentStatus;
+  notes?: string;
+  createdAt: string;
 }

@@ -6,42 +6,66 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 // ─── External ──────────────────────────────────────────────────────────────
-import { Plus, FlaskConical, AlertTriangle, MapPin, Pencil, Beaker, Thermometer, Truck, Shield } from "lucide-react";
 import { ProductCard } from "@/components/ui/ProductCard";
+import {
+    AlertTriangle,
+    Beaker,
+    FlaskConical,
+    MapPin,
+    Pencil,
+    Plus,
+    Shield,
+    Thermometer,
+    Truck,
+} from "lucide-react";
 
 // ─── Internal Components ───────────────────────────────────────────────────
-import AppLayout from "@/components/layout/AppLayout";
 import EmptyState from "@/components/EmptyState";
-import PageHeader from "@/components/shared/PageHeader";
-import SearchFilter from "@/components/shared/SearchFilter";
-import { QuickStats } from "@/components/shared/QuickStats";
-import { ViewToggle } from "@/components/shared/ViewToggle";
-import ImageWithFallback from "@/components/shared/ImageWithFallback";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import ImageUpload from "@/components/ImageUpload";
+import AppLayout from "@/components/layout/AppLayout";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
+import PageHeader from "@/components/shared/PageHeader";
+import { QuickStats } from "@/components/shared/QuickStats";
+import SearchFilter from "@/components/shared/SearchFilter";
+import { ViewToggle } from "@/components/shared/ViewToggle";
+import { Button } from "@/components/ui/button";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 // ─── Hook & Types ──────────────────────────────────────────────────────────
 import {
-  useChemicalsView,
-  hazardBackground,
-  hazardBadge,
-  expiryStatus,
-  formatDisplayDate,
-  type ChemicalItem,
-  type ChemicalForm,
+    expiryStatus,
+    formatDisplayDate,
+    hazardBackground,
+    hazardBadge,
+    useChemicalsView,
+    type ChemicalForm,
+    type ChemicalItem,
 } from "./useChemicalsView";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -67,7 +91,10 @@ const Chemicals = () => {
           }
         />
 
-        <SafetyAlert expiredCount={view.expiredCount} expiringSoonCount={view.expiringSoonCount} />
+        <SafetyAlert
+          expiredCount={view.expiredCount}
+          expiringSoonCount={view.expiringSoonCount}
+        />
 
         <QuickStats stats={view.quickStats} />
 
@@ -94,6 +121,7 @@ const Chemicals = () => {
             items={view.filteredItems}
             onNavigate={view.navigateToDetail}
             onEdit={view.openEditForm}
+            onAdjust={view.openAdjustDialog}
           />
         )}
 
@@ -102,15 +130,19 @@ const Chemicals = () => {
             items={view.filteredItems}
             onNavigate={view.navigateToDetail}
             onEdit={view.openEditForm}
+            onAdjust={view.openAdjustDialog}
           />
         )}
 
         <footer className="flex items-center justify-between text-sm text-muted-foreground">
-          <p>Showing {view.filteredItems.length} of {view.totalCount} chemicals</p>
+          <p>
+            Showing {view.filteredItems.length} of {view.totalCount} chemicals
+          </p>
         </footer>
       </div>
 
       <ChemicalFormDialog view={view} />
+      <QuantityAdjustmentDialog view={view} />
     </AppLayout>
   );
 };
@@ -123,13 +155,20 @@ export default Chemicals;
 
 /* ─── Safety Alert Banner ───────────────────────────────────────────────── */
 
-const SafetyAlert = ({ expiredCount, expiringSoonCount }: { expiredCount: number; expiringSoonCount: number }) => (
+const SafetyAlert = ({
+  expiredCount,
+  expiringSoonCount,
+}: {
+  expiredCount: number;
+  expiringSoonCount: number;
+}) => (
   <div className="flex items-center gap-3 p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
     <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
     <div>
       <p className="text-sm font-medium text-destructive">Safety Alert</p>
       <p className="text-sm text-muted-foreground">
-        {expiredCount} expired chemical(s) and {expiringSoonCount} item(s) expiring within 14 days require attention.
+        {expiredCount} expired chemical(s) and {expiringSoonCount} item(s)
+        expiring within 14 days require attention.
       </p>
     </div>
   </div>
@@ -139,7 +178,9 @@ const SafetyAlert = ({ expiredCount, expiringSoonCount }: { expiredCount: number
 
 const HazardFilter = () => (
   <Select>
-    <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Hazard Level" /></SelectTrigger>
+    <SelectTrigger className="w-full sm:w-40">
+      <SelectValue placeholder="Hazard Level" />
+    </SelectTrigger>
     <SelectContent>
       <SelectItem value="all">All Levels</SelectItem>
       <SelectItem value="high">High Hazard</SelectItem>
@@ -151,7 +192,9 @@ const HazardFilter = () => (
 
 const ExpiryFilter = () => (
   <Select>
-    <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Expiry Status" /></SelectTrigger>
+    <SelectTrigger className="w-full sm:w-40">
+      <SelectValue placeholder="Expiry Status" />
+    </SelectTrigger>
     <SelectContent>
       <SelectItem value="all">All Status</SelectItem>
       <SelectItem value="expired">Expired</SelectItem>
@@ -167,19 +210,41 @@ interface ChemicalGridProps {
   items: ChemicalItem[];
   onNavigate: (id: string) => void;
   onEdit: (c: ChemicalItem) => void;
+  onAdjust: (c: ChemicalItem, action: ChemicalActionType) => void;
 }
 
-const ChemicalGrid = ({ items, onNavigate, onEdit }: ChemicalGridProps) => (
+const ChemicalGrid = ({
+  items,
+  onNavigate,
+  onEdit,
+  onAdjust,
+}: ChemicalGridProps) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     {items.map((chem) => (
-      <ChemicalCard key={chem.id} item={chem} onNavigate={onNavigate} onEdit={onEdit} />
+      <ChemicalCard
+        key={chem.id}
+        item={chem}
+        onNavigate={onNavigate}
+        onEdit={onEdit}
+        onAdjust={onAdjust}
+      />
     ))}
   </div>
 );
 
 /* ─── Single Chemical Card ──────────────────────────────────────────────── */
 
-const ChemicalCard = ({ item, onNavigate, onEdit }: { item: ChemicalItem; onNavigate: (id: string) => void; onEdit: (c: ChemicalItem) => void }) => {
+const ChemicalCard = ({
+  item,
+  onNavigate,
+  onEdit,
+  onAdjust,
+}: {
+  item: ChemicalItem;
+  onNavigate: (id: string) => void;
+  onEdit: (c: ChemicalItem) => void;
+  onAdjust: (c: ChemicalItem, action: ChemicalActionType) => void;
+}) => {
   const Icon = item.icon;
   const expiry = expiryStatus(item.daysLeft);
   const navigateToDetail = () => onNavigate(item.id);
@@ -196,7 +261,12 @@ const ChemicalCard = ({ item, onNavigate, onEdit }: { item: ChemicalItem; onNavi
 
   // Status badge (expiry status)
   const statusBadge = (
-    <span className={cn("text-xs font-medium px-2 py-1 rounded-lg", expiry.className)}>
+    <span
+      className={cn(
+        "text-xs font-medium px-2 py-1 rounded-lg",
+        expiry.className,
+      )}
+    >
       {expiry.label}
     </span>
   );
@@ -204,31 +274,67 @@ const ChemicalCard = ({ item, onNavigate, onEdit }: { item: ChemicalItem; onNavi
   // Fallback image content
   const fallbackImage = (
     <>
-      <Icon className="h-16 w-16 transition-transform duration-200 group-hover:scale-110" style={{ color: item.color }} strokeWidth={1.2} />
-      <span className={cn("mt-3 text-xs font-medium px-2 py-1 rounded-lg", hazardBadge(item.hazard))}>{item.hazard} hazard</span>
+      <Icon
+        className="h-16 w-16 transition-transform duration-200 group-hover:scale-110"
+        style={{ color: item.color }}
+        strokeWidth={1.2}
+      />
+      <span
+        className={cn(
+          "mt-3 text-xs font-medium px-2 py-1 rounded-lg",
+          hazardBadge(item.hazard),
+        )}
+      >
+        {item.hazard} hazard
+      </span>
     </>
   );
 
   return (
-    <ProductCard
-      image={item.imageUrl}
-      fallbackImage={fallbackImage}
-      title={item.name}
-      subtitle={subtitle}
-      id={item.id}
-      statusBadge={statusBadge}
-      meta={meta}
-      onClick={navigateToDetail}
-      onEdit={() => onEdit(item)}
-      className="aspect-square"
-      imageBackgroundColor={hazardBackground(item.hazard)}
-    />
+    <div className="flex flex-col">
+      <ProductCard
+        image={item.imageUrl}
+        fallbackImage={fallbackImage}
+        title={item.name}
+        subtitle={subtitle}
+        id={item.id}
+        statusBadge={statusBadge}
+        meta={meta}
+        onClick={navigateToDetail}
+        onEdit={() => onEdit(item)}
+        className="aspect-square"
+        imageBackgroundColor={hazardBackground(item.hazard)}
+      />
+      <div className="flex items-center justify-center gap-2 pt-2 pb-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1 text-xs h-7"
+          onClick={() => onAdjust(item, "add")}
+        >
+          <ArrowUpCircle className="h-3 w-3 text-primary" /> Increase
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1 text-xs h-7"
+          onClick={() => onAdjust(item, "reduce")}
+        >
+          <ArrowDownCircle className="h-3 w-3 text-destructive" /> Reduce
+        </Button>
+      </div>
+    </div>
   );
 };
 
 /* ─── Table View ────────────────────────────────────────────────────────── */
 
-const ChemicalTable = ({ items, onNavigate, onEdit }: ChemicalGridProps) => (
+const ChemicalTable = ({
+  items,
+  onNavigate,
+  onEdit,
+  onAdjust,
+}: ChemicalGridProps) => (
   <div className="rounded-xl overflow-hidden border border-border/40">
     <Table>
       <TableHeader>
@@ -246,46 +352,126 @@ const ChemicalTable = ({ items, onNavigate, onEdit }: ChemicalGridProps) => (
       </TableHeader>
       <TableBody>
         {items.map((chem) => (
-          <ChemicalTableRow key={chem.id} item={chem} onNavigate={onNavigate} onEdit={onEdit} />
+          <ChemicalTableRow
+            key={chem.id}
+            item={chem}
+            onNavigate={onNavigate}
+            onEdit={onEdit}
+            onAdjust={onAdjust}
+          />
         ))}
       </TableBody>
     </Table>
   </div>
 );
 
-const ChemicalTableRow = ({ item, onNavigate, onEdit }: { item: ChemicalItem; onNavigate: (id: string) => void; onEdit: (c: ChemicalItem) => void }) => {
+const ChemicalTableRow = ({
+  item,
+  onNavigate,
+  onEdit,
+  onAdjust,
+}: {
+  item: ChemicalItem;
+  onNavigate: (id: string) => void;
+  onEdit: (c: ChemicalItem) => void;
+  onAdjust: (c: ChemicalItem, action: ChemicalActionType) => void;
+}) => {
   const expiry = expiryStatus(item.daysLeft);
   const navigateToDetail = () => onNavigate(item.id);
-  const stopAndEdit = (e: React.MouseEvent) => { e.stopPropagation(); onEdit(item); };
+  const stopAndEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(item);
+  };
 
   return (
     <TableRow
       className="cursor-pointer hover:bg-muted/50"
       onClick={navigateToDetail}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigateToDetail(); } }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigateToDetail();
+        }
+      }}
       role="link"
       tabIndex={0}
     >
       <TableCell>
         <div className="w-10 h-10 overflow-hidden bg-muted/50 flex items-center justify-center rounded-lg">
-          <ImageWithFallback src={item.imageUrl} alt={item.name} fallback={<FlaskConical className="h-4 w-4 text-muted-foreground/50" />} />
+          <ImageWithFallback
+            src={item.imageUrl}
+            alt={item.name}
+            fallback={
+              <FlaskConical className="h-4 w-4 text-muted-foreground/50" />
+            }
+          />
         </div>
       </TableCell>
-      <TableCell className="font-mono text-xs text-muted-foreground/70">{item.id}</TableCell>
+      <TableCell className="font-mono text-xs text-muted-foreground/70">
+        {item.id}
+      </TableCell>
       <TableCell className="font-medium">{item.name}</TableCell>
-      <TableCell className="text-muted-foreground text-sm">{item.cas}</TableCell>
+      <TableCell className="text-muted-foreground text-sm">
+        {item.cas}
+      </TableCell>
       <TableCell className="text-center">
-        <span className={cn("inline-block px-2 py-1 text-xs font-medium rounded-lg", hazardBadge(item.hazard))}>{item.hazard}</span>
+        <span
+          className={cn(
+            "inline-block px-2 py-1 text-xs font-medium rounded-lg",
+            hazardBadge(item.hazard),
+          )}
+        >
+          {item.hazard}
+        </span>
       </TableCell>
       <TableCell className="text-center font-medium">{item.quantity}</TableCell>
       <TableCell className="text-center">
-        <span className={cn("inline-block px-2 py-1 text-xs font-medium rounded-lg", expiry.className)}>{expiry.label}</span>
+        <span
+          className={cn(
+            "inline-block px-2 py-1 text-xs font-medium rounded-lg",
+            expiry.className,
+          )}
+        >
+          {expiry.label}
+        </span>
       </TableCell>
       <TableCell className="text-sm">{item.location}</TableCell>
       <TableCell className="text-right">
-        <Button variant="ghost" size="sm" className="h-9 w-9 p-0" aria-label={`Edit ${item.name}`} onClick={stopAndEdit}>
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            aria-label={`Increase ${item.name}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdjust(item, "add");
+            }}
+          >
+            <ArrowUpCircle className="h-3.5 w-3.5 text-primary" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            aria-label={`Reduce ${item.name}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdjust(item, "reduce");
+            }}
+          >
+            <ArrowDownCircle className="h-3.5 w-3.5 text-destructive" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0"
+            aria-label={`Edit ${item.name}`}
+            onClick={stopAndEdit}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </TableCell>
     </TableRow>
   );
@@ -293,8 +479,17 @@ const ChemicalTableRow = ({ item, onNavigate, onEdit }: { item: ChemicalItem; on
 
 /* ─── Form Dialog ───────────────────────────────────────────────────────── */
 
-const ChemicalFormDialog = ({ view }: { view: ReturnType<typeof useChemicalsView> }) => (
-  <Dialog open={view.formOpen} onOpenChange={(open) => { if (!open) view.closeForm(); }}>
+const ChemicalFormDialog = ({
+  view,
+}: {
+  view: ReturnType<typeof useChemicalsView>;
+}) => (
+  <Dialog
+    open={view.formOpen}
+    onOpenChange={(open) => {
+      if (!open) view.closeForm();
+    }}
+  >
     <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{view.formTitle}</DialogTitle>
@@ -302,10 +497,15 @@ const ChemicalFormDialog = ({ view }: { view: ReturnType<typeof useChemicalsView
       </DialogHeader>
 
       <div className="space-y-6 py-4">
-        <p className="text-xs text-muted-foreground"><span className="text-destructive">*</span> indicates a required field</p>
+        <p className="text-xs text-muted-foreground">
+          <span className="text-destructive">*</span> indicates a required field
+        </p>
 
         <IdentitySection form={view.form} updateField={view.updateFormField} />
-        <PropertiesSection form={view.form} updateField={view.updateFormField} />
+        <PropertiesSection
+          form={view.form}
+          updateField={view.updateFormField}
+        />
         <StorageSection form={view.form} updateField={view.updateFormField} />
         <SafetySection form={view.form} updateField={view.updateFormField} />
         <SupplierSection form={view.form} updateField={view.updateFormField} />
@@ -313,18 +513,32 @@ const ChemicalFormDialog = ({ view }: { view: ReturnType<typeof useChemicalsView
 
         <div className="space-y-2">
           <Label htmlFor="ch-notes">Notes</Label>
-          <Textarea id="ch-notes" placeholder="Safety notes, handling instructions..." value={view.form.notes} onChange={(e) => view.updateFormField("notes", e.target.value)} rows={3} />
+          <Textarea
+            id="ch-notes"
+            placeholder="Safety notes, handling instructions..."
+            value={view.form.notes}
+            onChange={(e) => view.updateFormField("notes", e.target.value)}
+            rows={3}
+          />
         </div>
 
         <div className="space-y-2">
           <Label>Chemical Image</Label>
-          <ImageUpload value={view.form.imageUrl} onChange={(url) => view.updateFormField("imageUrl", url)} />
+          <ImageUpload
+            value={view.form.imageUrl}
+            onChange={(url) => view.updateFormField("imageUrl", url)}
+          />
         </div>
       </div>
 
       <DialogFooter>
-        <Button variant="outline" onClick={view.closeForm}>Cancel</Button>
-        <Button onClick={view.submitChemicalForm} disabled={!view.canSubmitForm}>
+        <Button variant="outline" onClick={view.closeForm}>
+          Cancel
+        </Button>
+        <Button
+          onClick={view.submitChemicalForm}
+          disabled={!view.canSubmitForm}
+        >
           {view.isEditing ? "Save Changes" : "Add Chemical"}
         </Button>
       </DialogFooter>
@@ -336,7 +550,10 @@ const ChemicalFormDialog = ({ view }: { view: ReturnType<typeof useChemicalsView
 
 type SectionProps = {
   form: ChemicalForm;
-  updateField: <K extends keyof ChemicalForm>(field: K, value: ChemicalForm[K]) => void;
+  updateField: <K extends keyof ChemicalForm>(
+    field: K,
+    value: ChemicalForm[K],
+  ) => void;
 };
 
 const IdentitySection = ({ form, updateField }: SectionProps) => (
@@ -347,15 +564,30 @@ const IdentitySection = ({ form, updateField }: SectionProps) => (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2 col-span-2">
         <Label htmlFor="ch-name">Chemical Name *</Label>
-        <Input id="ch-name" placeholder="e.g., Sodium Hydroxide (NaOH)" value={form.name} onChange={(e) => updateField("name", e.target.value)} />
+        <Input
+          id="ch-name"
+          placeholder="e.g., Sodium Hydroxide (NaOH)"
+          value={form.name}
+          onChange={(e) => updateField("name", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-cas">CAS Number</Label>
-        <Input id="ch-cas" placeholder="e.g., 1310-73-2" value={form.cas} onChange={(e) => updateField("cas", e.target.value)} />
+        <Input
+          id="ch-cas"
+          placeholder="e.g., 1310-73-2"
+          value={form.cas}
+          onChange={(e) => updateField("cas", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-lot">Lot Number</Label>
-        <Input id="ch-lot" placeholder="e.g., LOT-2024-A1" value={form.lotNumber} onChange={(e) => updateField("lotNumber", e.target.value)} />
+        <Input
+          id="ch-lot"
+          placeholder="e.g., LOT-2024-A1"
+          value={form.lotNumber}
+          onChange={(e) => updateField("lotNumber", e.target.value)}
+        />
       </div>
     </div>
   </fieldset>
@@ -364,20 +596,36 @@ const IdentitySection = ({ form, updateField }: SectionProps) => (
 const PropertiesSection = ({ form, updateField }: SectionProps) => (
   <fieldset>
     <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-      <FlaskConical className="h-4 w-4 text-muted-foreground/60" /> Chemical Properties
+      <FlaskConical className="h-4 w-4 text-muted-foreground/60" /> Chemical
+      Properties
     </legend>
     <div className="grid grid-cols-3 gap-4">
       <div className="space-y-2">
         <Label htmlFor="ch-conc">Concentration</Label>
-        <Input id="ch-conc" placeholder="e.g., 1 M, 95%" value={form.concentration} onChange={(e) => updateField("concentration", e.target.value)} />
+        <Input
+          id="ch-conc"
+          placeholder="e.g., 1 M, 95%"
+          value={form.concentration}
+          onChange={(e) => updateField("concentration", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-mw">Molecular Weight</Label>
-        <Input id="ch-mw" placeholder="e.g., 40.00 g/mol" value={form.molecularWeight} onChange={(e) => updateField("molecularWeight", e.target.value)} />
+        <Input
+          id="ch-mw"
+          placeholder="e.g., 40.00 g/mol"
+          value={form.molecularWeight}
+          onChange={(e) => updateField("molecularWeight", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-purity">Purity</Label>
-        <Input id="ch-purity" placeholder="e.g., ≥97%" value={form.purity} onChange={(e) => updateField("purity", e.target.value)} />
+        <Input
+          id="ch-purity"
+          placeholder="e.g., ≥97%"
+          value={form.purity}
+          onChange={(e) => updateField("purity", e.target.value)}
+        />
       </div>
     </div>
   </fieldset>
@@ -386,24 +634,45 @@ const PropertiesSection = ({ form, updateField }: SectionProps) => (
 const StorageSection = ({ form, updateField }: SectionProps) => (
   <fieldset>
     <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-      <Thermometer className="h-4 w-4 text-muted-foreground/60" /> Quantity &amp; Storage
+      <Thermometer className="h-4 w-4 text-muted-foreground/60" /> Quantity
+      &amp; Storage
     </legend>
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
         <Label htmlFor="ch-qty">Quantity *</Label>
-        <Input id="ch-qty" placeholder="e.g., 2.5L, 500g" value={form.quantity} onChange={(e) => updateField("quantity", e.target.value)} />
+        <Input
+          id="ch-qty"
+          placeholder="e.g., 2.5L, 500g"
+          value={form.quantity}
+          onChange={(e) => updateField("quantity", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-loc">Storage Location *</Label>
-        <Input id="ch-loc" placeholder="e.g., Cabinet A-1" value={form.location} onChange={(e) => updateField("location", e.target.value)} />
+        <Input
+          id="ch-loc"
+          placeholder="e.g., Cabinet A-1"
+          value={form.location}
+          onChange={(e) => updateField("location", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-stemp">Storage Temperature</Label>
-        <Input id="ch-stemp" placeholder="e.g., 15–25°C (RT)" value={form.storageTemp} onChange={(e) => updateField("storageTemp", e.target.value)} />
+        <Input
+          id="ch-stemp"
+          placeholder="e.g., 15–25°C (RT)"
+          value={form.storageTemp}
+          onChange={(e) => updateField("storageTemp", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-scond">Storage Conditions</Label>
-        <Input id="ch-scond" placeholder="e.g., Keep sealed, dry" value={form.storageConditions} onChange={(e) => updateField("storageConditions", e.target.value)} />
+        <Input
+          id="ch-scond"
+          placeholder="e.g., Keep sealed, dry"
+          value={form.storageConditions}
+          onChange={(e) => updateField("storageConditions", e.target.value)}
+        />
       </div>
     </div>
   </fieldset>
@@ -417,8 +686,13 @@ const SafetySection = ({ form, updateField }: SectionProps) => (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
         <Label htmlFor="ch-hazard">Hazard Level *</Label>
-        <Select value={form.hazard} onValueChange={(v) => updateField("hazard", v)}>
-          <SelectTrigger id="ch-hazard"><SelectValue placeholder="Select hazard" /></SelectTrigger>
+        <Select
+          value={form.hazard}
+          onValueChange={(v) => updateField("hazard", v)}
+        >
+          <SelectTrigger id="ch-hazard">
+            <SelectValue placeholder="Select hazard" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="low">Low</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
@@ -428,11 +702,21 @@ const SafetySection = ({ form, updateField }: SectionProps) => (
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-safety">Safety Classification</Label>
-        <Input id="ch-safety" placeholder="e.g., Corrosive" value={form.safetyClass} onChange={(e) => updateField("safetyClass", e.target.value)} />
+        <Input
+          id="ch-safety"
+          placeholder="e.g., Corrosive"
+          value={form.safetyClass}
+          onChange={(e) => updateField("safetyClass", e.target.value)}
+        />
       </div>
       <div className="space-y-2 col-span-2">
         <Label htmlFor="ch-ghs">GHS Pictograms (comma-separated)</Label>
-        <Input id="ch-ghs" placeholder="e.g., GHS05, GHS07" value={form.ghs} onChange={(e) => updateField("ghs", e.target.value)} />
+        <Input
+          id="ch-ghs"
+          placeholder="e.g., GHS05, GHS07"
+          value={form.ghs}
+          onChange={(e) => updateField("ghs", e.target.value)}
+        />
       </div>
     </div>
   </fieldset>
@@ -441,16 +725,27 @@ const SafetySection = ({ form, updateField }: SectionProps) => (
 const SupplierSection = ({ form, updateField }: SectionProps) => (
   <fieldset>
     <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-      <Truck className="h-4 w-4 text-muted-foreground/60" /> Supplier Information
+      <Truck className="h-4 w-4 text-muted-foreground/60" /> Supplier
+      Information
     </legend>
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
         <Label htmlFor="ch-supplier">Supplier</Label>
-        <Input id="ch-supplier" placeholder="e.g., Sigma-Aldrich" value={form.supplier} onChange={(e) => updateField("supplier", e.target.value)} />
+        <Input
+          id="ch-supplier"
+          placeholder="e.g., Sigma-Aldrich"
+          value={form.supplier}
+          onChange={(e) => updateField("supplier", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-catalog">Supplier Catalog #</Label>
-        <Input id="ch-catalog" placeholder="e.g., S8045-500G" value={form.supplierCatalog} onChange={(e) => updateField("supplierCatalog", e.target.value)} />
+        <Input
+          id="ch-catalog"
+          placeholder="e.g., S8045-500G"
+          value={form.supplierCatalog}
+          onChange={(e) => updateField("supplierCatalog", e.target.value)}
+        />
       </div>
     </div>
   </fieldset>
@@ -464,12 +759,122 @@ const DatesSection = ({ form, updateField }: SectionProps) => (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
         <Label htmlFor="ch-received">Date Received</Label>
-        <Input id="ch-received" type="date" value={form.dateReceived} onChange={(e) => updateField("dateReceived", e.target.value)} />
+        <Input
+          id="ch-received"
+          type="date"
+          value={form.dateReceived}
+          onChange={(e) => updateField("dateReceived", e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="ch-expiry">Expiry Date *</Label>
-        <Input id="ch-expiry" type="date" value={form.expiry} onChange={(e) => updateField("expiry", e.target.value)} />
+        <Input
+          id="ch-expiry"
+          type="date"
+          value={form.expiry}
+          onChange={(e) => updateField("expiry", e.target.value)}
+        />
       </div>
     </div>
   </fieldset>
 );
+
+/* ─── Quantity Adjustment Dialog ────────────────────────────────────────── */
+
+const QuantityAdjustmentDialog = ({
+  view,
+}: {
+  view: ReturnType<typeof useChemicalsView>;
+}) => {
+  const isAdd = view.adjustAction === "add";
+
+  return (
+    <Dialog
+      open={view.adjustOpen}
+      onOpenChange={(open) => {
+        if (!open) view.closeAdjustDialog();
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {isAdd ? (
+              <ArrowUpCircle className="h-5 w-5 text-primary" />
+            ) : (
+              <ArrowDownCircle className="h-5 w-5 text-destructive" />
+            )}
+            {isAdd ? "Increase Quantity" : "Reduce Quantity"}
+          </DialogTitle>
+          <DialogDescription>
+            {view.adjustItem
+              ? `Adjust quantity for ${view.adjustItem.name}. Current: ${view.adjustItem.quantity}`
+              : ""}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="adj-amount">Amount *</Label>
+              <Input
+                id="adj-amount"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="e.g., 500"
+                value={view.adjustAmount}
+                onChange={(e) => view.setAdjustAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="adj-unit">Unit *</Label>
+              <Select
+                value={view.adjustUnit}
+                onValueChange={view.setAdjustUnit}
+              >
+                <SelectTrigger id="adj-unit">
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mL">mL</SelectItem>
+                  <SelectItem value="L">L</SelectItem>
+                  <SelectItem value="g">g</SelectItem>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="mg">mg</SelectItem>
+                  <SelectItem value="units">units</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="adj-reason">Reason</Label>
+            <Textarea
+              id="adj-reason"
+              placeholder={
+                isAdd
+                  ? "e.g., Restocked from supplier"
+                  : "e.g., Used in experiment EXP-042"
+              }
+              value={view.adjustReason}
+              onChange={(e) => view.setAdjustReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={view.closeAdjustDialog}>
+            Cancel
+          </Button>
+          <Button
+            onClick={view.submitQuantityAdjustment}
+            disabled={!view.canSubmitAdjust}
+            variant={isAdd ? "default" : "destructive"}
+          >
+            {isAdd ? "Increase" : "Reduce"} Quantity
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

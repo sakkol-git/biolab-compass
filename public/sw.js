@@ -1,10 +1,16 @@
-const CACHE_NAME = "biolab-compass-v2";
-const STATIC_ASSETS = ["/", "/index.html", "/favicon.ico", "/favicon.svg", "/manifest.json"];
+const CACHE_NAME = "plant-lap-laboratory-v3";
+const STATIC_ASSETS = [
+  "/",
+  "/index.html",
+  "/favicon.ico",
+  "/favicon.svg",
+  "/manifest.json",
+];
 
 // Install — cache shell
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
   );
   self.skipWaiting();
 });
@@ -12,11 +18,13 @@ self.addEventListener("install", (event) => {
 // Activate — clean old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
-      )
-    )
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(
+          names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)),
+        ),
+      ),
   );
   self.clients.claim();
 });
@@ -33,7 +41,7 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match("/index.html"))
+        .catch(() => caches.match("/index.html")),
     );
     return;
   }
@@ -48,6 +56,6 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       });
-    })
+    }),
   );
 });

@@ -8,6 +8,7 @@ export interface SpeciesDetail {
   id: string;
   scientificName: string;
   commonName: string;
+  khmerName?: string;
   family: string;
   growthType: string;
   optimalTemp: string;
@@ -23,7 +24,13 @@ export interface SpeciesDetail {
   propagation: string;
   maturityDays: number;
   maxHeight: string;
-  associatedBatches: { id: string; stage: string; quantity: number; location: string; startDate: string }[];
+  associatedBatches: {
+    id: string;
+    stage: string;
+    quantity: number;
+    location: string;
+    startDate: string;
+  }[];
   tags: string[];
 }
 
@@ -32,13 +39,12 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     id: "SP-001",
     scientificName: "Solanum lycopersicum",
     commonName: "Tomato",
+    khmerName: "ប៉េងប៉ោះ",
     family: "Solanaceae",
-    growthType: "Annual",
-    optimalTemp: "20–25°C",
-    activeBatches: 1,
-    totalPlants: 150,
-    description: "Widely cultivated edible fruit-bearing plant used in various research studies. Known for its complex genetic architecture and significance in studying fruit development, ripening, and disease resistance mechanisms.",
-    imageUrl: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=800&h=400&fit=crop",
+    description:
+      "Widely cultivated edible fruit-bearing plant used in various research studies. Known for its complex genetic architecture and significance in studying fruit development, ripening, and disease resistance mechanisms.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=800&h=400&fit=crop",
     nativeRegion: "Western South America",
     lightRequirement: "Full Sun (6-8 hrs)",
     waterRequirement: "Moderate — consistent moisture",
@@ -48,7 +54,13 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     maturityDays: 70,
     maxHeight: "1.5–3 m",
     associatedBatches: [
-      { id: "PB-001", stage: "Growing", quantity: 150, location: "Greenhouse A", startDate: "2025-11-15" },
+      {
+        id: "PB-001",
+        stage: "Growing",
+        quantity: 150,
+        location: "Greenhouse A",
+        startDate: "2025-11-15",
+      },
     ],
     tags: ["model organism", "fruit development", "solanaceae"],
   },
@@ -56,13 +68,12 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     id: "SP-002",
     scientificName: "Arabidopsis thaliana",
     commonName: "Thale Cress",
+    khmerName: "ស្មៅថែល",
     family: "Brassicaceae",
-    growthType: "Annual",
-    optimalTemp: "22–24°C",
-    activeBatches: 1,
-    totalPlants: 300,
-    description: "Model organism for plant biology and genetics research. First plant to have its entire genome sequenced. Widely used in studies of gene regulation, development, and stress responses.",
-    imageUrl: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=400&fit=crop",
+    description:
+      "Model organism for plant biology and genetics research. First plant to have its entire genome sequenced. Widely used in studies of gene regulation, development, and stress responses.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=400&fit=crop",
     nativeRegion: "Eurasia & North Africa",
     lightRequirement: "Moderate (16h/8h photoperiod)",
     waterRequirement: "Low — drought tolerant",
@@ -72,7 +83,13 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     maturityDays: 42,
     maxHeight: "25–35 cm",
     associatedBatches: [
-      { id: "PB-002", stage: "Seedling", quantity: 300, location: "Growth Chamber 1", startDate: "2026-01-03" },
+      {
+        id: "PB-002",
+        stage: "Seedling",
+        quantity: 300,
+        location: "Growth Chamber 1",
+        startDate: "2026-01-03",
+      },
     ],
     tags: ["model organism", "genomics", "genetics"],
   },
@@ -80,13 +97,12 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     id: "SP-003",
     scientificName: "Zea mays",
     commonName: "Maize",
+    khmerName: "ពោត",
     family: "Poaceae",
-    growthType: "Annual",
-    optimalTemp: "25–30°C",
-    activeBatches: 1,
-    totalPlants: 500,
-    description: "Major cereal grain used in genetics, breeding, and biofuel research. Its large genome and genetic diversity make it invaluable for quantitative trait loci mapping and heterosis studies.",
-    imageUrl: "https://images.unsplash.com/photo-1601593768498-8de537434af0?w=800&h=400&fit=crop",
+    description:
+      "Major cereal grain used in genetics, breeding, and biofuel research. Its large genome and genetic diversity make it invaluable for quantitative trait loci mapping and heterosis studies.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1601593768498-8de537434af0?w=800&h=400&fit=crop",
     nativeRegion: "Mesoamerica",
     lightRequirement: "Full Sun (8+ hrs)",
     waterRequirement: "High — regular watering",
@@ -96,7 +112,13 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     maturityDays: 90,
     maxHeight: "2–3 m",
     associatedBatches: [
-      { id: "PB-003", stage: "Seed", quantity: 500, location: "Cold Storage", startDate: "2025-09-20" },
+      {
+        id: "PB-003",
+        stage: "Seed",
+        quantity: 500,
+        location: "Cold Storage",
+        startDate: "2025-09-20",
+      },
     ],
     tags: ["cereal crop", "biofuel", "breeding"],
   },
@@ -104,13 +126,16 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     id: "SP-004",
     scientificName: "Oryza sativa",
     commonName: "Rice",
+    khmerName: "ស្រូវ",
     family: "Poaceae",
     growthType: "Annual",
     optimalTemp: "25–35°C",
     activeBatches: 1,
     totalPlants: 200,
-    description: "Staple cereal crop and model monocot for genomics research. Its relatively small genome among cereals and well-annotated genome sequence make it a reference for grass biology.",
-    imageUrl: "https://images.unsplash.com/photo-1536054953991-8a5a0e5e5e04?w=800&h=400&fit=crop",
+    description:
+      "Staple cereal crop and model monocot for genomics research. Its relatively small genome among cereals and well-annotated genome sequence make it a reference for grass biology.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1536054953991-8a5a0e5e5e04?w=800&h=400&fit=crop",
     nativeRegion: "Southeast Asia",
     lightRequirement: "Full Sun",
     waterRequirement: "Very High — paddy conditions",
@@ -120,7 +145,13 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     maturityDays: 120,
     maxHeight: "1–1.8 m",
     associatedBatches: [
-      { id: "PB-004", stage: "Growing", quantity: 200, location: "Greenhouse B", startDate: "2025-12-01" },
+      {
+        id: "PB-004",
+        stage: "Growing",
+        quantity: 200,
+        location: "Greenhouse B",
+        startDate: "2025-12-01",
+      },
     ],
     tags: ["staple crop", "genomics", "monocot"],
   },
@@ -128,13 +159,16 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     id: "SP-005",
     scientificName: "Nicotiana tabacum",
     commonName: "Tobacco",
+    khmerName: "ថ្នាំជក់",
     family: "Solanaceae",
     growthType: "Annual",
     optimalTemp: "20–30°C",
     activeBatches: 1,
     totalPlants: 45,
-    description: "Commonly used in plant molecular biology and transient expression studies. Its large leaves and ease of transformation make it ideal for protein expression and biopharming research.",
-    imageUrl: "https://images.unsplash.com/photo-1515150144380-bca9f1650ed9?w=800&h=400&fit=crop",
+    description:
+      "Commonly used in plant molecular biology and transient expression studies. Its large leaves and ease of transformation make it ideal for protein expression and biopharming research.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1515150144380-bca9f1650ed9?w=800&h=400&fit=crop",
     nativeRegion: "The Americas",
     lightRequirement: "Full Sun (6-8 hrs)",
     waterRequirement: "Moderate",
@@ -144,7 +178,13 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     maturityDays: 80,
     maxHeight: "1–2 m",
     associatedBatches: [
-      { id: "PB-005", stage: "Harvested", quantity: 45, location: "Drying Room", startDate: "2025-08-10" },
+      {
+        id: "PB-005",
+        stage: "Harvested",
+        quantity: 45,
+        location: "Drying Room",
+        startDate: "2025-08-10",
+      },
     ],
     tags: ["transient expression", "biopharming", "molecular biology"],
   },
@@ -152,13 +192,16 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     id: "SP-006",
     scientificName: "Glycine max",
     commonName: "Soybean",
+    khmerName: "សណ្ដែកសៀង",
     family: "Fabaceae",
     growthType: "Annual",
     optimalTemp: "20–30°C",
     activeBatches: 0,
     totalPlants: 0,
-    description: "Important legume crop used in nitrogen fixation and protein research. Symbiotic relationship with rhizobia bacteria makes it a model for studying biological nitrogen fixation.",
-    imageUrl: "https://images.unsplash.com/photo-1599420186946-7a27d18a7d86?w=800&h=400&fit=crop",
+    description:
+      "Important legume crop used in nitrogen fixation and protein research. Symbiotic relationship with rhizobia bacteria makes it a model for studying biological nitrogen fixation.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1599420186946-7a27d18a7d86?w=800&h=400&fit=crop",
     nativeRegion: "East Asia",
     lightRequirement: "Full Sun",
     waterRequirement: "Moderate",
@@ -168,7 +211,13 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     maturityDays: 100,
     maxHeight: "0.6–1.2 m",
     associatedBatches: [
-      { id: "PB-006", stage: "Failed", quantity: 0, location: "Greenhouse A", startDate: "2025-10-05" },
+      {
+        id: "PB-006",
+        stage: "Failed",
+        quantity: 0,
+        location: "Greenhouse A",
+        startDate: "2025-10-05",
+      },
     ],
     tags: ["legume", "nitrogen fixation", "protein"],
   },
@@ -176,13 +225,16 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     id: "SP-007",
     scientificName: "Triticum aestivum",
     commonName: "Wheat",
+    khmerName: "ស្រូវសាលី",
     family: "Poaceae",
     growthType: "Annual",
     optimalTemp: "15–20°C",
     activeBatches: 1,
     totalPlants: 400,
-    description: "Major global cereal crop, model for polyploidy and breeding research. Its hexaploid genome provides unique opportunities for studying gene redundancy and sub-genome evolution.",
-    imageUrl: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&h=400&fit=crop",
+    description:
+      "Major global cereal crop, model for polyploidy and breeding research. Its hexaploid genome provides unique opportunities for studying gene redundancy and sub-genome evolution.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&h=400&fit=crop",
     nativeRegion: "Fertile Crescent",
     lightRequirement: "Full Sun",
     waterRequirement: "Moderate",
@@ -192,7 +244,13 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     maturityDays: 120,
     maxHeight: "0.7–1.2 m",
     associatedBatches: [
-      { id: "PB-007", stage: "Seedling", quantity: 400, location: "Field Plot 1", startDate: "2026-01-20" },
+      {
+        id: "PB-007",
+        stage: "Seedling",
+        quantity: 400,
+        location: "Field Plot 1",
+        startDate: "2026-01-20",
+      },
     ],
     tags: ["cereal crop", "polyploidy", "breeding"],
   },
@@ -216,7 +274,12 @@ export interface BatchDetail {
   expectedHarvestDate: string;
   healthScore: number;
   growthMilestones: { date: string; event: string }[];
-  environmentalLog: { date: string; temp: string; humidity: string; light: string }[];
+  environmentalLog: {
+    date: string;
+    temp: string;
+    humidity: string;
+    light: string;
+  }[];
   assignedTo: string;
 }
 
@@ -231,8 +294,10 @@ export const batchDetailData: Record<string, BatchDetail> = {
     location: "Greenhouse A",
     status: "Healthy",
     startDate: "2025-11-15",
-    notes: "Experimental cultivar trial — evaluating disease resistance traits across 3 cultivar lines.",
-    imageUrl: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=800&h=400&fit=crop",
+    notes:
+      "Experimental cultivar trial — evaluating disease resistance traits across 3 cultivar lines.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=800&h=400&fit=crop",
     sourceMaterial: "Seed lot TM-2024-A (certified)",
     expectedHarvestDate: "2026-03-15",
     healthScore: 92,
@@ -260,8 +325,10 @@ export const batchDetailData: Record<string, BatchDetail> = {
     location: "Growth Chamber 1",
     status: "Healthy",
     startDate: "2026-01-03",
-    notes: "Gene expression study — Col-0 ecotype, T3 generation transgenic lines for GFP reporter analysis.",
-    imageUrl: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=400&fit=crop",
+    notes:
+      "Gene expression study — Col-0 ecotype, T3 generation transgenic lines for GFP reporter analysis.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=400&fit=crop",
     sourceMaterial: "In-house T2 seed stock (transgenic)",
     expectedHarvestDate: "2026-03-20",
     healthScore: 98,
@@ -288,8 +355,10 @@ export const batchDetailData: Record<string, BatchDetail> = {
     location: "Cold Storage",
     status: "Dormant",
     startDate: "2025-09-20",
-    notes: "Stored for spring planting. Inbred lines B73 and Mo17 for heterosis study.",
-    imageUrl: "https://images.unsplash.com/photo-1601593768498-8de537434af0?w=800&h=400&fit=crop",
+    notes:
+      "Stored for spring planting. Inbred lines B73 and Mo17 for heterosis study.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1601593768498-8de537434af0?w=800&h=400&fit=crop",
     sourceMaterial: "USDA Seed Bank — Accession ZM-B73-2024",
     expectedHarvestDate: "2026-08-30",
     healthScore: 100,
@@ -315,8 +384,10 @@ export const batchDetailData: Record<string, BatchDetail> = {
     location: "Greenhouse B",
     status: "Healthy",
     startDate: "2025-12-01",
-    notes: "Drought resistance study — comparing IR64 and Nipponbare cultivars under progressive water stress.",
-    imageUrl: "https://images.unsplash.com/photo-1536054953991-8a5a0e5e5e04?w=800&h=400&fit=crop",
+    notes:
+      "Drought resistance study — comparing IR64 and Nipponbare cultivars under progressive water stress.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1536054953991-8a5a0e5e5e04?w=800&h=400&fit=crop",
     sourceMaterial: "IRRI Seed Bank — IR64-2024, Nipponbare-2024",
     expectedHarvestDate: "2026-05-01",
     healthScore: 85,
@@ -343,8 +414,10 @@ export const batchDetailData: Record<string, BatchDetail> = {
     location: "Drying Room",
     status: "Processed",
     startDate: "2025-08-10",
-    notes: "Transient expression batch — Agrobacterium-mediated infiltration for GFP-tagged proteins.",
-    imageUrl: "https://images.unsplash.com/photo-1515150144380-bca9f1650ed9?w=800&h=400&fit=crop",
+    notes:
+      "Transient expression batch — Agrobacterium-mediated infiltration for GFP-tagged proteins.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1515150144380-bca9f1650ed9?w=800&h=400&fit=crop",
     sourceMaterial: "In-house Xanthi variety seed stock",
     expectedHarvestDate: "2025-12-15",
     healthScore: 75,
@@ -373,8 +446,10 @@ export const batchDetailData: Record<string, BatchDetail> = {
     location: "Greenhouse A",
     status: "Failed",
     startDate: "2025-10-05",
-    notes: "Contamination detected — Rhizoctonia root rot identified. Batch terminated to prevent spread.",
-    imageUrl: "https://images.unsplash.com/photo-1599420186946-7a27d18a7d86?w=800&h=400&fit=crop",
+    notes:
+      "Contamination detected — Rhizoctonia root rot identified. Batch terminated to prevent spread.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1599420186946-7a27d18a7d86?w=800&h=400&fit=crop",
     sourceMaterial: "Certified Williams 82 seed (commercial)",
     expectedHarvestDate: "N/A",
     healthScore: 0,
@@ -398,8 +473,10 @@ export const batchDetailData: Record<string, BatchDetail> = {
     location: "Field Plot 1",
     status: "Healthy",
     startDate: "2026-01-20",
-    notes: "Winter wheat variety trial — comparing 5 cultivars for cold tolerance and yield potential.",
-    imageUrl: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&h=400&fit=crop",
+    notes:
+      "Winter wheat variety trial — comparing 5 cultivars for cold tolerance and yield potential.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&h=400&fit=crop",
     sourceMaterial: "CIMMYT Seed Bank — 5 cultivar accessions",
     expectedHarvestDate: "2026-06-15",
     healthScore: 90,
@@ -442,7 +519,12 @@ export interface ChemicalDetail {
   safetyClass: string;
   ghs: string[];
   sdsUrl: string;
-  usageRecords: { date: string; user: string; amountUsed: string; purpose: string }[];
+  usageRecords: {
+    date: string;
+    user: string;
+    amountUsed: string;
+    purpose: string;
+  }[];
 }
 
 export const chemicalDetailData: Record<string, ChemicalDetail> = {
@@ -458,8 +540,10 @@ export const chemicalDetailData: Record<string, ChemicalDetail> = {
     daysLeft: 7,
     hazard: "high",
     location: "Cabinet A-1",
-    notes: "Corrosive — always use PPE. Used for pH adjustment in growth media preparation.",
-    imageUrl: "https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=800&h=400&fit=crop",
+    notes:
+      "Corrosive — always use PPE. Used for pH adjustment in growth media preparation.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=800&h=400&fit=crop",
     supplier: "Sigma-Aldrich",
     supplierCatalog: "S8045",
     lotNumber: "MKCL9574",
@@ -470,9 +554,24 @@ export const chemicalDetailData: Record<string, ChemicalDetail> = {
     ghs: ["GHS05", "GHS07"],
     sdsUrl: "#",
     usageRecords: [
-      { date: "2026-02-01", user: "Dr. Chen", amountUsed: "50 mL", purpose: "Media pH adjustment" },
-      { date: "2026-01-20", user: "Emily R.", amountUsed: "100 mL", purpose: "Buffer preparation" },
-      { date: "2026-01-10", user: "Dr. Park", amountUsed: "25 mL", purpose: "Cleaning solution" },
+      {
+        date: "2026-02-01",
+        user: "Dr. Chen",
+        amountUsed: "50 mL",
+        purpose: "Media pH adjustment",
+      },
+      {
+        date: "2026-01-20",
+        user: "Emily R.",
+        amountUsed: "100 mL",
+        purpose: "Buffer preparation",
+      },
+      {
+        date: "2026-01-10",
+        user: "Dr. Park",
+        amountUsed: "25 mL",
+        purpose: "Cleaning solution",
+      },
     ],
   },
   "CH-002": {
@@ -488,19 +587,31 @@ export const chemicalDetailData: Record<string, ChemicalDetail> = {
     hazard: "high",
     location: "Acid Storage",
     notes: "Strong mineral acid. Used for pH lowering and glassware cleaning.",
-    imageUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&h=400&fit=crop",
+    imageUrl:
+      "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&h=400&fit=crop",
     supplier: "Fisher Scientific",
     supplierCatalog: "A144-500",
     lotNumber: "FS-20240812",
     dateReceived: "2024-08-20",
     storageTemp: "15–25°C",
-    storageConditions: "Store in acid cabinet. Keep away from bases and oxidizers.",
+    storageConditions:
+      "Store in acid cabinet. Keep away from bases and oxidizers.",
     safetyClass: "Corrosive / Toxic",
     ghs: ["GHS05", "GHS07"],
     sdsUrl: "#",
     usageRecords: [
-      { date: "2026-01-25", user: "Dr. Patel", amountUsed: "20 mL", purpose: "Acid wash of glassware" },
-      { date: "2025-12-15", user: "Dr. Chen", amountUsed: "10 mL", purpose: "pH titration" },
+      {
+        date: "2026-01-25",
+        user: "Dr. Patel",
+        amountUsed: "20 mL",
+        purpose: "Acid wash of glassware",
+      },
+      {
+        date: "2025-12-15",
+        user: "Dr. Chen",
+        amountUsed: "10 mL",
+        purpose: "pH titration",
+      },
     ],
   },
   "CH-003": {
@@ -515,20 +626,33 @@ export const chemicalDetailData: Record<string, ChemicalDetail> = {
     daysLeft: 20,
     hazard: "medium",
     location: "Flammable Cabinet",
-    notes: "Highly flammable. Used for surface disinfection and RNA extraction protocols.",
-    imageUrl: "https://images.unsplash.com/photo-1616711020004-4a85c872f1ee?w=800&h=400&fit=crop",
+    notes:
+      "Highly flammable. Used for surface disinfection and RNA extraction protocols.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1616711020004-4a85c872f1ee?w=800&h=400&fit=crop",
     supplier: "VWR International",
     supplierCatalog: "89125-170",
     lotNumber: "VWR-2025-0445",
     dateReceived: "2025-06-01",
     storageTemp: "15–25°C",
-    storageConditions: "Flammable cabinet. Keep away from heat sources and ignition.",
+    storageConditions:
+      "Flammable cabinet. Keep away from heat sources and ignition.",
     safetyClass: "Flammable Liquid (Category 2)",
     ghs: ["GHS02", "GHS07"],
     sdsUrl: "#",
     usageRecords: [
-      { date: "2026-02-03", user: "Emily R.", amountUsed: "500 mL", purpose: "Laminar flow hood sterilization" },
-      { date: "2026-01-28", user: "Dr. Park", amountUsed: "200 mL", purpose: "RNA extraction" },
+      {
+        date: "2026-02-03",
+        user: "Emily R.",
+        amountUsed: "500 mL",
+        purpose: "Laminar flow hood sterilization",
+      },
+      {
+        date: "2026-01-28",
+        user: "Dr. Park",
+        amountUsed: "200 mL",
+        purpose: "RNA extraction",
+      },
     ],
   },
   "CH-004": {
@@ -543,20 +667,33 @@ export const chemicalDetailData: Record<string, ChemicalDetail> = {
     daysLeft: 313,
     hazard: "low",
     location: "Dry Storage",
-    notes: "Used for preparing solid growth media. Non-hazardous — standard lab practice applies.",
-    imageUrl: "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=800&h=400&fit=crop",
+    notes:
+      "Used for preparing solid growth media. Non-hazardous — standard lab practice applies.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=800&h=400&fit=crop",
     supplier: "BD Difco",
     supplierCatalog: "214010",
     lotNumber: "BD-2025-1120",
     dateReceived: "2025-01-10",
     storageTemp: "15–25°C",
-    storageConditions: "Store in dry area. Keep container sealed to prevent moisture absorption.",
+    storageConditions:
+      "Store in dry area. Keep container sealed to prevent moisture absorption.",
     safetyClass: "Non-hazardous",
     ghs: [],
     sdsUrl: "#",
     usageRecords: [
-      { date: "2026-02-02", user: "Dr. Chen", amountUsed: "15 g", purpose: "MS agar plates preparation" },
-      { date: "2026-01-15", user: "Emily R.", amountUsed: "30 g", purpose: "Batch culture media" },
+      {
+        date: "2026-02-02",
+        user: "Dr. Chen",
+        amountUsed: "15 g",
+        purpose: "MS agar plates preparation",
+      },
+      {
+        date: "2026-01-15",
+        user: "Emily R.",
+        amountUsed: "30 g",
+        purpose: "Batch culture media",
+      },
     ],
   },
   "CH-005": {
@@ -571,20 +708,33 @@ export const chemicalDetailData: Record<string, ChemicalDetail> = {
     daysLeft: 206,
     hazard: "low",
     location: "Cold Room",
-    notes: "Standard basal salt mixture for plant tissue culture. Store desiccated at 2–8°C.",
-    imageUrl: "https://images.unsplash.com/photo-1578496781985-452d4a934d50?w=800&h=400&fit=crop",
+    notes:
+      "Standard basal salt mixture for plant tissue culture. Store desiccated at 2–8°C.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1578496781985-452d4a934d50?w=800&h=400&fit=crop",
     supplier: "PhytoTech Labs",
     supplierCatalog: "M519",
     lotNumber: "PT-2025-0901",
     dateReceived: "2025-09-05",
     storageTemp: "2–8°C",
-    storageConditions: "Refrigerate. Keep desiccated and sealed. Protect from light.",
+    storageConditions:
+      "Refrigerate. Keep desiccated and sealed. Protect from light.",
     safetyClass: "Non-hazardous",
     ghs: [],
     sdsUrl: "#",
     usageRecords: [
-      { date: "2026-01-30", user: "Dr. Patel", amountUsed: "44 g", purpose: "10L MS media batch" },
-      { date: "2026-01-10", user: "Dr. Chen", amountUsed: "22 g", purpose: "5L media prep for tissue culture" },
+      {
+        date: "2026-01-30",
+        user: "Dr. Patel",
+        amountUsed: "44 g",
+        purpose: "10L MS media batch",
+      },
+      {
+        date: "2026-01-10",
+        user: "Dr. Chen",
+        amountUsed: "22 g",
+        purpose: "5L media prep for tissue culture",
+      },
     ],
   },
   "CH-006": {
@@ -599,19 +749,27 @@ export const chemicalDetailData: Record<string, ChemicalDetail> = {
     daysLeft: -31,
     hazard: "high",
     location: "Acid Storage",
-    notes: "EXPIRED — schedule for disposal. Previously used for phosphate buffer preparation.",
-    imageUrl: "https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=800&h=400&fit=crop",
+    notes:
+      "EXPIRED — schedule for disposal. Previously used for phosphate buffer preparation.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=800&h=400&fit=crop",
     supplier: "Sigma-Aldrich",
     supplierCatalog: "W290017",
     lotNumber: "MKCQ4422",
     dateReceived: "2024-01-20",
     storageTemp: "15–25°C",
-    storageConditions: "Acid storage cabinet. Incompatible with bases, metals, and organic materials.",
+    storageConditions:
+      "Acid storage cabinet. Incompatible with bases, metals, and organic materials.",
     safetyClass: "Corrosive (C)",
     ghs: ["GHS05"],
     sdsUrl: "#",
     usageRecords: [
-      { date: "2025-11-30", user: "Dr. Park", amountUsed: "15 mL", purpose: "Phosphate buffer" },
+      {
+        date: "2025-11-30",
+        user: "Dr. Park",
+        amountUsed: "15 mL",
+        purpose: "Phosphate buffer",
+      },
     ],
   },
   "CH-007": {
@@ -626,20 +784,33 @@ export const chemicalDetailData: Record<string, ChemicalDetail> = {
     daysLeft: 257,
     hazard: "medium",
     location: "Chemical Store",
-    notes: "Oxidizing agent. Used as a macronutrient source in custom hydroponic solutions.",
-    imageUrl: "https://images.unsplash.com/photo-1585435557343-3b092031a831?w=800&h=400&fit=crop",
+    notes:
+      "Oxidizing agent. Used as a macronutrient source in custom hydroponic solutions.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1585435557343-3b092031a831?w=800&h=400&fit=crop",
     supplier: "Merck Millipore",
     supplierCatalog: "1.05063",
     lotNumber: "MM-2025-0621",
     dateReceived: "2025-06-25",
     storageTemp: "15–25°C",
-    storageConditions: "Keep away from combustible materials. Store in a cool, dry location.",
+    storageConditions:
+      "Keep away from combustible materials. Store in a cool, dry location.",
     safetyClass: "Oxidizer (Category 3)",
     ghs: ["GHS03", "GHS07"],
     sdsUrl: "#",
     usageRecords: [
-      { date: "2026-01-18", user: "Emily R.", amountUsed: "200 g", purpose: "Hydroponic nutrient solution" },
-      { date: "2025-12-05", user: "Dr. Patel", amountUsed: "150 g", purpose: "Custom fertilizer mix" },
+      {
+        date: "2026-01-18",
+        user: "Emily R.",
+        amountUsed: "200 g",
+        purpose: "Hydroponic nutrient solution",
+      },
+      {
+        date: "2025-12-05",
+        user: "Dr. Patel",
+        amountUsed: "150 g",
+        purpose: "Custom fertilizer mix",
+      },
     ],
   },
 };
@@ -667,7 +838,13 @@ export interface EquipmentDetail {
   depreciationRate: string;
   warrantyExpiry: string;
   specifications: { label: string; value: string }[];
-  maintenanceHistory: { date: string; type: string; technician: string; notes: string; cost: string }[];
+  maintenanceHistory: {
+    date: string;
+    type: string;
+    technician: string;
+    notes: string;
+    cost: string;
+  }[];
   usageLog: { date: string; user: string; duration: string; purpose: string }[];
 }
 
@@ -679,8 +856,10 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
     status: "Available",
     location: "Lab Room 1",
     lastMaintenance: "Jan 15, 2026",
-    notes: "Primary teaching and research microscope. Oil immersion objective available.",
-    imageUrl: "https://images.unsplash.com/photo-1516383740770-fbcc5ccbece0?w=800&h=400&fit=crop",
+    notes:
+      "Primary teaching and research microscope. Oil immersion objective available.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1516383740770-fbcc5ccbece0?w=800&h=400&fit=crop",
     manufacturer: "Olympus",
     model: "CX43",
     serialNumber: "OLY-CX43-2023-0047",
@@ -697,13 +876,41 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
       { label: "Weight", value: "7.5 kg" },
     ],
     maintenanceHistory: [
-      { date: "2026-01-15", type: "Routine", technician: "Lab Services Inc.", notes: "Lens cleaning, alignment check, LED bulb replaced", cost: "$120" },
-      { date: "2025-07-10", type: "Routine", technician: "Lab Services Inc.", notes: "Full optical cleaning and calibration", cost: "$95" },
-      { date: "2025-01-20", type: "Repair", technician: "Olympus Service", notes: "Stage mechanism repaired — sticky movement fixed", cost: "$280" },
+      {
+        date: "2026-01-15",
+        type: "Routine",
+        technician: "Lab Services Inc.",
+        notes: "Lens cleaning, alignment check, LED bulb replaced",
+        cost: "$120",
+      },
+      {
+        date: "2025-07-10",
+        type: "Routine",
+        technician: "Lab Services Inc.",
+        notes: "Full optical cleaning and calibration",
+        cost: "$95",
+      },
+      {
+        date: "2025-01-20",
+        type: "Repair",
+        technician: "Olympus Service",
+        notes: "Stage mechanism repaired — sticky movement fixed",
+        cost: "$280",
+      },
     ],
     usageLog: [
-      { date: "2026-02-05", user: "Emily R.", duration: "2h", purpose: "Cell morphology observation" },
-      { date: "2026-02-03", user: "Dr. Chen", duration: "3h", purpose: "Pollen viability assessment" },
+      {
+        date: "2026-02-05",
+        user: "Emily R.",
+        duration: "2h",
+        purpose: "Cell morphology observation",
+      },
+      {
+        date: "2026-02-03",
+        user: "Dr. Chen",
+        duration: "3h",
+        purpose: "Pollen viability assessment",
+      },
     ],
   },
   "EQ-002": {
@@ -715,8 +922,10 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
     lastMaintenance: "Dec 05, 2025",
     borrowedBy: "Dr. Park",
     returnDate: "Feb 10, 2026",
-    notes: "Large-capacity vertical autoclave. Reserve at least 1 day in advance for batch sterilization.",
-    imageUrl: "https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?w=800&h=400&fit=crop",
+    notes:
+      "Large-capacity vertical autoclave. Reserve at least 1 day in advance for batch sterilization.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?w=800&h=400&fit=crop",
     manufacturer: "Tuttnauer",
     model: "3870ELV",
     serialNumber: "TUT-3870-2022-1103",
@@ -733,12 +942,34 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
       { label: "Power", value: "3.5 kW, 220V" },
     ],
     maintenanceHistory: [
-      { date: "2025-12-05", type: "Routine", technician: "Tuttnauer Service", notes: "Gasket replacement, pressure test, calibration", cost: "$350" },
-      { date: "2025-06-15", type: "Routine", technician: "Tuttnauer Service", notes: "Annual safety inspection and certification", cost: "$200" },
+      {
+        date: "2025-12-05",
+        type: "Routine",
+        technician: "Tuttnauer Service",
+        notes: "Gasket replacement, pressure test, calibration",
+        cost: "$350",
+      },
+      {
+        date: "2025-06-15",
+        type: "Routine",
+        technician: "Tuttnauer Service",
+        notes: "Annual safety inspection and certification",
+        cost: "$200",
+      },
     ],
     usageLog: [
-      { date: "2026-02-04", user: "Dr. Park", duration: "4h", purpose: "Media sterilization (batch)" },
-      { date: "2026-02-01", user: "Dr. Park", duration: "2h", purpose: "Glassware sterilization" },
+      {
+        date: "2026-02-04",
+        user: "Dr. Park",
+        duration: "4h",
+        purpose: "Media sterilization (batch)",
+      },
+      {
+        date: "2026-02-01",
+        user: "Dr. Park",
+        duration: "2h",
+        purpose: "Glassware sterilization",
+      },
     ],
   },
   "EQ-003": {
@@ -748,8 +979,10 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
     status: "Available",
     location: "Chemistry Lab",
     lastMaintenance: "Dec 20, 2025",
-    notes: "Benchtop pH meter with temperature compensation. Calibrate before each use session.",
-    imageUrl: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=800&h=400&fit=crop",
+    notes:
+      "Benchtop pH meter with temperature compensation. Calibrate before each use session.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=800&h=400&fit=crop",
     manufacturer: "Mettler Toledo",
     model: "FiveEasy F20",
     serialNumber: "MT-F20-2024-0892",
@@ -766,12 +999,35 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
       { label: "Display", value: "LCD backlit" },
     ],
     maintenanceHistory: [
-      { date: "2025-12-20", type: "Calibration", technician: "In-house", notes: "3-point calibration (pH 4, 7, 10). Electrode in good condition.", cost: "$0" },
-      { date: "2025-09-15", type: "Repair", technician: "MT Service", notes: "Electrode replaced — response time degraded", cost: "$120" },
+      {
+        date: "2025-12-20",
+        type: "Calibration",
+        technician: "In-house",
+        notes:
+          "3-point calibration (pH 4, 7, 10). Electrode in good condition.",
+        cost: "$0",
+      },
+      {
+        date: "2025-09-15",
+        type: "Repair",
+        technician: "MT Service",
+        notes: "Electrode replaced — response time degraded",
+        cost: "$120",
+      },
     ],
     usageLog: [
-      { date: "2026-02-05", user: "Dr. Patel", duration: "1h", purpose: "Media pH adjustment" },
-      { date: "2026-02-04", user: "Emily R.", duration: "30min", purpose: "Buffer verification" },
+      {
+        date: "2026-02-05",
+        user: "Dr. Patel",
+        duration: "1h",
+        purpose: "Media pH adjustment",
+      },
+      {
+        date: "2026-02-04",
+        user: "Emily R.",
+        duration: "30min",
+        purpose: "Buffer verification",
+      },
     ],
   },
   "EQ-004": {
@@ -782,8 +1038,10 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
     location: "Service Dept",
     lastMaintenance: "Jan 05, 2026",
     issue: "Rotor replacement",
-    notes: "High-speed refrigerated centrifuge. Currently out of service — awaiting replacement rotor from manufacturer.",
-    imageUrl: "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800&h=400&fit=crop",
+    notes:
+      "High-speed refrigerated centrifuge. Currently out of service — awaiting replacement rotor from manufacturer.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800&h=400&fit=crop",
     manufacturer: "Beckman Coulter",
     model: "Avanti J-26XP",
     serialNumber: "BC-J26-2021-3371",
@@ -800,11 +1058,30 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
       { label: "Weight", value: "272 kg" },
     ],
     maintenanceHistory: [
-      { date: "2026-01-28", type: "Repair", technician: "BC Field Service", notes: "Rotor bearing failure detected. Replacement ordered (ETA: 2 weeks).", cost: "$2,400" },
-      { date: "2025-08-10", type: "Routine", technician: "BC Field Service", notes: "Annual PM — vacuum system check, rotor inspection, software update", cost: "$450" },
+      {
+        date: "2026-01-28",
+        type: "Repair",
+        technician: "BC Field Service",
+        notes:
+          "Rotor bearing failure detected. Replacement ordered (ETA: 2 weeks).",
+        cost: "$2,400",
+      },
+      {
+        date: "2025-08-10",
+        type: "Routine",
+        technician: "BC Field Service",
+        notes:
+          "Annual PM — vacuum system check, rotor inspection, software update",
+        cost: "$450",
+      },
     ],
     usageLog: [
-      { date: "2026-01-25", user: "Dr. Chen", duration: "3h", purpose: "Protein extraction — cell pellet" },
+      {
+        date: "2026-01-25",
+        user: "Dr. Chen",
+        duration: "3h",
+        purpose: "Protein extraction — cell pellet",
+      },
     ],
   },
   "EQ-005": {
@@ -814,8 +1091,10 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
     status: "Available",
     location: "Lab Room 1",
     lastMaintenance: "Jan 28, 2026",
-    notes: "UV-Vis spectrophotometer for absorbance measurements. Supports cuvette and microplate reading.",
-    imageUrl: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=800&h=400&fit=crop",
+    notes:
+      "UV-Vis spectrophotometer for absorbance measurements. Supports cuvette and microplate reading.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=800&h=400&fit=crop",
     manufacturer: "Thermo Fisher",
     model: "NanoDrop One",
     serialNumber: "TF-ND1-2023-5520",
@@ -832,12 +1111,35 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
       { label: "Measurement Time", value: "< 5 seconds" },
     ],
     maintenanceHistory: [
-      { date: "2026-01-28", type: "Calibration", technician: "In-house", notes: "Performance verification with NIST standards. Passed all checks.", cost: "$0" },
-      { date: "2025-07-15", type: "Routine", technician: "Thermo Service", notes: "Pedestal resurfaced, firmware updated", cost: "$150" },
+      {
+        date: "2026-01-28",
+        type: "Calibration",
+        technician: "In-house",
+        notes:
+          "Performance verification with NIST standards. Passed all checks.",
+        cost: "$0",
+      },
+      {
+        date: "2025-07-15",
+        type: "Routine",
+        technician: "Thermo Service",
+        notes: "Pedestal resurfaced, firmware updated",
+        cost: "$150",
+      },
     ],
     usageLog: [
-      { date: "2026-02-05", user: "Dr. Patel", duration: "1h", purpose: "DNA quantification" },
-      { date: "2026-02-04", user: "Emily R.", duration: "2h", purpose: "Protein concentration assay (Bradford)" },
+      {
+        date: "2026-02-05",
+        user: "Dr. Patel",
+        duration: "1h",
+        purpose: "DNA quantification",
+      },
+      {
+        date: "2026-02-04",
+        user: "Emily R.",
+        duration: "2h",
+        purpose: "Protein concentration assay (Bradford)",
+      },
     ],
   },
   "EQ-006": {
@@ -849,8 +1151,10 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
     lastMaintenance: "Dec 20, 2025",
     borrowedBy: "Emily Rodriguez",
     returnDate: "Feb 08, 2026",
-    notes: "Class II biological safety cabinet. HEPA filtration. UV sterilization cycle before each use.",
-    imageUrl: "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=800&h=400&fit=crop",
+    notes:
+      "Class II biological safety cabinet. HEPA filtration. UV sterilization cycle before each use.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=800&h=400&fit=crop",
     manufacturer: "Esco",
     model: "Airstream Class II A2",
     serialNumber: "ESCO-AC2-2022-0815",
@@ -867,12 +1171,34 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
       { label: "Noise Level", value: "< 58 dBA" },
     ],
     maintenanceHistory: [
-      { date: "2025-10-15", type: "Certification", technician: "BioSafe Services", notes: "Annual HEPA filter integrity test — PASSED. Airflow verified.", cost: "$250" },
-      { date: "2025-04-20", type: "Routine", technician: "BioSafe Services", notes: "UV lamp replaced. Pre-filter cleaned.", cost: "$85" },
+      {
+        date: "2025-10-15",
+        type: "Certification",
+        technician: "BioSafe Services",
+        notes: "Annual HEPA filter integrity test — PASSED. Airflow verified.",
+        cost: "$250",
+      },
+      {
+        date: "2025-04-20",
+        type: "Routine",
+        technician: "BioSafe Services",
+        notes: "UV lamp replaced. Pre-filter cleaned.",
+        cost: "$85",
+      },
     ],
     usageLog: [
-      { date: "2026-02-05", user: "Emily R.", duration: "5h", purpose: "Plant tissue culture subculturing" },
-      { date: "2026-02-04", user: "Emily R.", duration: "3h", purpose: "Explant preparation" },
+      {
+        date: "2026-02-05",
+        user: "Emily R.",
+        duration: "5h",
+        purpose: "Plant tissue culture subculturing",
+      },
+      {
+        date: "2026-02-04",
+        user: "Emily R.",
+        duration: "3h",
+        purpose: "Explant preparation",
+      },
     ],
   },
   "EQ-007": {
@@ -882,8 +1208,10 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
     status: "Available",
     location: "Plant Lab",
     lastMaintenance: "Feb 01, 2026",
-    notes: "Programmable plant growth chamber with independent light, temperature, and humidity control.",
-    imageUrl: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&h=400&fit=crop",
+    notes:
+      "Programmable plant growth chamber with independent light, temperature, and humidity control.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&h=400&fit=crop",
     manufacturer: "Percival Scientific",
     model: "AR-66L3",
     serialNumber: "PS-AR66-2023-1209",
@@ -900,11 +1228,29 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
       { label: "Shelves", value: "5 adjustable" },
     ],
     maintenanceHistory: [
-      { date: "2026-02-01", type: "Routine", technician: "In-house", notes: "Temperature and humidity sensors calibrated. Lighting schedule verified.", cost: "$0" },
-      { date: "2025-08-20", type: "Repair", technician: "Percival Service", notes: "Compressor refrigerant top-up. Cooling coil inspection.", cost: "$320" },
+      {
+        date: "2026-02-01",
+        type: "Routine",
+        technician: "In-house",
+        notes:
+          "Temperature and humidity sensors calibrated. Lighting schedule verified.",
+        cost: "$0",
+      },
+      {
+        date: "2025-08-20",
+        type: "Repair",
+        technician: "Percival Service",
+        notes: "Compressor refrigerant top-up. Cooling coil inspection.",
+        cost: "$320",
+      },
     ],
     usageLog: [
-      { date: "2026-02-05", user: "Dr. Chen", duration: "Continuous", purpose: "Arabidopsis growth experiment" },
+      {
+        date: "2026-02-05",
+        user: "Dr. Chen",
+        duration: "Continuous",
+        purpose: "Arabidopsis growth experiment",
+      },
     ],
   },
   "EQ-008": {
@@ -914,8 +1260,10 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
     status: "Available",
     location: "Molecular Lab",
     lastMaintenance: "Jan 10, 2026",
-    notes: "Gradient-capable PCR thermocycler. 96-well block. Supports touchdown and stepdown protocols.",
-    imageUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&h=400&fit=crop",
+    notes:
+      "Gradient-capable PCR thermocycler. 96-well block. Supports touchdown and stepdown protocols.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&h=400&fit=crop",
     manufacturer: "Bio-Rad",
     model: "T100",
     serialNumber: "BR-T100-2024-2847",
@@ -932,12 +1280,35 @@ export const equipmentDetailData: Record<string, EquipmentDetail> = {
       { label: "Weight", value: "10.5 kg" },
     ],
     maintenanceHistory: [
-      { date: "2026-01-10", type: "Calibration", technician: "In-house", notes: "Block temperature uniformity verified. All wells within ±0.3°C.", cost: "$0" },
-      { date: "2025-05-15", type: "Routine", technician: "Bio-Rad Service", notes: "Annual PM — lid mechanism lubricated, firmware updated", cost: "$100" },
+      {
+        date: "2026-01-10",
+        type: "Calibration",
+        technician: "In-house",
+        notes:
+          "Block temperature uniformity verified. All wells within ±0.3°C.",
+        cost: "$0",
+      },
+      {
+        date: "2025-05-15",
+        type: "Routine",
+        technician: "Bio-Rad Service",
+        notes: "Annual PM — lid mechanism lubricated, firmware updated",
+        cost: "$100",
+      },
     ],
     usageLog: [
-      { date: "2026-02-05", user: "Dr. Patel", duration: "4h", purpose: "Genotyping PCR — 48 samples" },
-      { date: "2026-02-03", user: "Emily R.", duration: "3h", purpose: "Colony PCR screening" },
+      {
+        date: "2026-02-05",
+        user: "Dr. Patel",
+        duration: "4h",
+        purpose: "Genotyping PCR — 48 samples",
+      },
+      {
+        date: "2026-02-03",
+        user: "Emily R.",
+        duration: "3h",
+        purpose: "Colony PCR screening",
+      },
     ],
   },
 };

@@ -5,7 +5,14 @@
 // Zero React imports. Zero side effects. Pure functions only.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { FlaskConical, Pencil, FileText, Printer } from "lucide-react";
+import {
+    ArrowDownCircle,
+    ArrowUpCircle,
+    FileText,
+    FlaskConical,
+    Pencil,
+    Printer,
+} from "lucide-react";
 import type { ActionButton } from "./types";
 
 // ─── Color / Badge Logic ─────────────────────────────────────────────────
@@ -37,7 +44,7 @@ export const hazardBadgeClass = (hazard: string): string => {
 };
 
 export const expiryBadge = (
-  daysLeft: number
+  daysLeft: number,
 ): { label: string; className: string } => {
   if (daysLeft < 0)
     return {
@@ -83,6 +90,20 @@ export const CHEMICAL_FALLBACK_ICON = FlaskConical;
 // ─── Action Buttons ──────────────────────────────────────────────────────
 
 export const buildActions = (): ActionButton[] => [
+  {
+    label: "Increase Qty",
+    icon: ArrowUpCircle,
+    variant: "outline",
+    className: "gap-2 border font-medium text-primary",
+    ariaLabel: "Increase chemical quantity",
+  },
+  {
+    label: "Reduce Qty",
+    icon: ArrowDownCircle,
+    variant: "outline",
+    className: "gap-2 border font-medium text-destructive",
+    ariaLabel: "Reduce chemical quantity",
+  },
   {
     label: "Edit",
     icon: Pencil,

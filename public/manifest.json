@@ -1,6 +1,6 @@
 {
-  "name": "BioLab Compass",
-  "short_name": "BioLab",
+  "name": "Plant Lap Laboratory",
+  "short_name": "PlantLap",
   "description": "Botanical laboratory management system — inventory, research & business operations.",
   "start_url": "/",
   "display": "standalone",

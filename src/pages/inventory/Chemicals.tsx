@@ -9,6 +9,8 @@
 import { ProductCard } from "@/components/ui/ProductCard";
 import {
     AlertTriangle,
+    ArrowDownCircle,
+    ArrowUpCircle,
     Beaker,
     FlaskConical,
     MapPin,

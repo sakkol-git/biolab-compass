@@ -11,8 +11,8 @@
 // appear and *where* — not *what data they display*.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 // ─── Atomic Data Shapes ────────────────────────────────────────────────────
 
@@ -144,6 +144,7 @@ export interface DashboardHeader {
 
 export interface InventoryDashboardConfig {
   header: DashboardHeader;
+  s;
   /** Widgets rendered above the tabs (e.g. KPI row) */
   globalWidgets: InventoryWidget[];
   tabs: DashboardTab[];

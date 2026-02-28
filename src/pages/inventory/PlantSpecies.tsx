@@ -11,23 +11,21 @@ import {
     Leaf,
     Pencil,
     Plus,
-    Ruler,
     Sprout,
     TestTube,
-    Thermometer,
 } from "lucide-react";
 
 // ─── Internal Components ───────────────────────────────────────────────────
 import EmptyState from "@/components/EmptyState";
 import ImageUpload from "@/components/ImageUpload";
 import AppLayout from "@/components/layout/AppLayout";
+import { LoadingState } from "@/components/LoadingState";
 import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import PageHeader from "@/components/shared/PageHeader";
 import QuantityBadge from "@/components/shared/QuantityBadge";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
 import { ViewToggle } from "@/components/shared/ViewToggle";
-import { ProductCard } from "@/components/ui/ProductCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ProductCard } from "@/components/ui/ProductCard";
 import {
     Select,
     SelectContent,
@@ -72,6 +71,26 @@ import {
 const PlantSpecies = () => {
   const view = usePlantSpeciesView();
   const hasResults = view.filteredItems.length > 0;
+
+  if (view.isLoading) {
+    return (
+      <AppLayout>
+        <LoadingState text="Loading plant species..." />
+      </AppLayout>
+    );
+  }
+
+  if (view.isError) {
+    return (
+      <AppLayout>
+        <EmptyState
+          icon={Leaf}
+          title="Failed to load species"
+          description="Could not connect to the server. Make sure the backend is running."
+        />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -213,7 +232,7 @@ const SpeciesCard = ({
 }) => {
   const Icon = item.icon;
   const hasVarieties = item.varietyCount > 0;
-  const imageUrl = item.images?.[0];
+  const imageUrl = item.imageUrl;
 
   return (
     <ProductCard
@@ -236,7 +255,7 @@ const SpeciesCard = ({
           : item.commonName
       }
       subtitle={item.scientificName}
-      id={item.speciesCode}
+      id={item.id}
       statusBadge={
         <div className="flex flex-wrap gap-1.5">
           <Badge
@@ -252,7 +271,6 @@ const SpeciesCard = ({
         </div>
       }
       meta={[
-        { icon: Thermometer, value: item.optimalTemp || "N/A" },
         { icon: Sprout, value: item.growthType || "N/A" },
         {
           icon: TestTube,
@@ -260,7 +278,7 @@ const SpeciesCard = ({
           value: (item.totalQuantity ?? 0).toLocaleString(),
         },
       ]}
-      tags={item.tags || []}
+      tags={[]}
       onClick={() => onNavigate(item.id)}
       onEdit={() => onEdit(item)}
       imageBackgroundColor={
@@ -270,19 +288,6 @@ const SpeciesCard = ({
     />
   );
 };
-
-const MetaLine = ({
-  icon: Icon,
-  text,
-}: {
-  icon: typeof Thermometer;
-  text: string;
-}) => (
-  <div className="flex items-center gap-1">
-    <Icon className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-    <span className="text-muted-foreground/70">{text}</span>
-  </div>
-);
 
 /* ─── Table View ────────────────────────────────────────────────────────── */
 
@@ -343,7 +348,7 @@ const SpeciesTableRow = ({
     onViewBatches(item.commonName);
   };
   const hasVarieties = item.varietyCount > 0;
-  const imageUrl = item.images?.[0];
+  const imageUrl = item.imageUrl;
 
   return (
     <TableRow
@@ -368,7 +373,7 @@ const SpeciesTableRow = ({
         </div>
       </TableCell>
       <TableCell className="font-mono text-xs text-muted-foreground/70">
-        {item.speciesCode}
+        {item.id}
       </TableCell>
       <TableCell className="font-medium">
         {item.commonName}
@@ -461,30 +466,26 @@ const SpeciesFormDialog = ({
           <span className="text-destructive">*</span> indicates a required field
         </p>
 
-        <BasicInfoSection form={view.form} updateField={view.updateFormField} />
-        <GrowthRequirementsSection
+        <BasicInfoSection
           form={view.form}
           updateField={view.updateFormField}
+          errors={view.formErrors}
         />
-        <PhysicalSection form={view.form} updateField={view.updateFormField} />
-
-        <div className="space-y-2">
-          <Label htmlFor="sp-tags">Tags (comma-separated)</Label>
-          <Input
-            id="sp-tags"
-            placeholder="e.g., model organism, fruit development, solanaceae"
-            value={view.form.tags}
-            onChange={(e) => view.updateFormField("tags", e.target.value)}
-          />
-        </div>
       </div>
 
       <DialogFooter>
         <Button variant="outline" onClick={view.closeForm}>
           Cancel
         </Button>
-        <Button onClick={view.submitSpeciesForm} disabled={!view.canSubmitForm}>
-          {view.isEditing ? "Save Changes" : "Add Species"}
+        <Button
+          onClick={view.submitSpeciesForm}
+          disabled={!view.canSubmitForm || view.isSubmitting}
+        >
+          {view.isSubmitting
+            ? "Saving..."
+            : view.isEditing
+              ? "Save Changes"
+              : "Add Species"}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -493,28 +494,43 @@ const SpeciesFormDialog = ({
 
 /* ─── Form Sections ─────────────────────────────────────────────────────── */
 
+import type { FieldErrors } from "@/lib/validation";
+
 type FormSectionProps = {
   form: SpeciesForm;
   updateField: <K extends keyof SpeciesForm>(
     field: K,
     value: SpeciesForm[K],
   ) => void;
+  errors?: FieldErrors<keyof SpeciesForm>;
 };
 
-const BasicInfoSection = ({ form, updateField }: FormSectionProps) => (
+const BasicInfoSection = ({
+  form,
+  updateField,
+  errors = {},
+}: FormSectionProps) => (
   <fieldset>
     <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
       <Leaf className="h-4 w-4 text-muted-foreground/60" /> Basic Information
     </legend>
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-2">
-        <Label htmlFor="sp-common">Common Name *</Label>
+        <Label htmlFor="sp-common">
+          Common Name <span className="text-destructive">*</span>
+        </Label>
         <Input
           id="sp-common"
           placeholder="e.g., Tomato"
           value={form.commonName}
           onChange={(e) => updateField("commonName", e.target.value)}
+          maxLength={255}
+          aria-invalid={!!errors.commonName}
+          className={errors.commonName ? "border-destructive" : ""}
         />
+        {errors.commonName && (
+          <p className="text-xs text-destructive">{errors.commonName}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="sp-khmer">Khmer Name</Label>
@@ -523,24 +539,41 @@ const BasicInfoSection = ({ form, updateField }: FormSectionProps) => (
           placeholder="e.g., បេកប៉ោះ"
           value={form.khmerName}
           onChange={(e) => updateField("khmerName", e.target.value)}
+          maxLength={255}
+          aria-invalid={!!errors.khmerName}
+          className={errors.khmerName ? "border-destructive" : ""}
         />
+        {errors.khmerName && (
+          <p className="text-xs text-destructive">{errors.khmerName}</p>
+        )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="sp-sci">Scientific Name *</Label>
+        <Label htmlFor="sp-sci">
+          Scientific Name <span className="text-destructive">*</span>
+        </Label>
         <Input
           id="sp-sci"
           placeholder="e.g., Solanum lycopersicum"
           value={form.scientificName}
           onChange={(e) => updateField("scientificName", e.target.value)}
+          maxLength={255}
+          aria-invalid={!!errors.scientificName}
+          className={errors.scientificName ? "border-destructive" : ""}
         />
+        {errors.scientificName && (
+          <p className="text-xs text-destructive">{errors.scientificName}</p>
+        )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="sp-fam">Family *</Label>
+        <Label htmlFor="sp-fam">Family</Label>
         <Select
           value={form.family}
           onValueChange={(v) => updateField("family", v)}
         >
-          <SelectTrigger id="sp-fam">
+          <SelectTrigger
+            id="sp-fam"
+            className={errors.family ? "border-destructive" : ""}
+          >
             <SelectValue placeholder="Select family" />
           </SelectTrigger>
           <SelectContent>
@@ -551,22 +584,33 @@ const BasicInfoSection = ({ form, updateField }: FormSectionProps) => (
             ))}
           </SelectContent>
         </Select>
+        {errors.family && (
+          <p className="text-xs text-destructive">{errors.family}</p>
+        )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="sp-growth">Growth Type *</Label>
+        <Label htmlFor="sp-growth">
+          Growth Type <span className="text-destructive">*</span>
+        </Label>
         <Select
           value={form.growthType}
           onValueChange={(v) => updateField("growthType", v)}
         >
-          <SelectTrigger id="sp-growth">
+          <SelectTrigger
+            id="sp-growth"
+            className={errors.growthType ? "border-destructive" : ""}
+          >
             <SelectValue placeholder="Select type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Annual">Annual</SelectItem>
-            <SelectItem value="Perennial">Perennial</SelectItem>
-            <SelectItem value="Biennial">Biennial</SelectItem>
+            <SelectItem value="annual">Annual</SelectItem>
+            <SelectItem value="perennial">Perennial</SelectItem>
+            <SelectItem value="biennial">Biennial</SelectItem>
           </SelectContent>
         </Select>
+        {errors.growthType && (
+          <p className="text-xs text-destructive">{errors.growthType}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="sp-region">Native Region</Label>
@@ -575,16 +619,28 @@ const BasicInfoSection = ({ form, updateField }: FormSectionProps) => (
           placeholder="e.g., Western South America"
           value={form.nativeRegion}
           onChange={(e) => updateField("nativeRegion", e.target.value)}
+          maxLength={255}
+          aria-invalid={!!errors.nativeRegion}
+          className={errors.nativeRegion ? "border-destructive" : ""}
         />
+        {errors.nativeRegion && (
+          <p className="text-xs text-destructive">{errors.nativeRegion}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="sp-prop">Propagation Method</Label>
         <Input
           id="sp-prop"
           placeholder="e.g., Seed, Stem Cuttings"
-          value={form.propagation}
-          onChange={(e) => updateField("propagation", e.target.value)}
+          value={form.propagationMethod}
+          onChange={(e) => updateField("propagationMethod", e.target.value)}
+          maxLength={255}
+          aria-invalid={!!errors.propagationMethod}
+          className={errors.propagationMethod ? "border-destructive" : ""}
         />
+        {errors.propagationMethod && (
+          <p className="text-xs text-destructive">{errors.propagationMethod}</p>
+        )}
       </div>
       <div className="space-y-2 col-span-2">
         <Label htmlFor="sp-desc">Description</Label>
@@ -594,101 +650,33 @@ const BasicInfoSection = ({ form, updateField }: FormSectionProps) => (
           value={form.description}
           onChange={(e) => updateField("description", e.target.value)}
           rows={3}
+          aria-invalid={!!errors.description}
+          className={errors.description ? "border-destructive" : ""}
         />
+        {errors.description && (
+          <p className="text-xs text-destructive">{errors.description}</p>
+        )}
       </div>
       <div className="space-y-2 col-span-2">
-        <Label>Species Image</Label>
-        <ImageUpload
+        <Label>Species Image URL</Label>
+        <Input
+          id="sp-image-url"
+          placeholder="https://example.com/image.jpg"
           value={form.imageUrl}
-          onChange={(url) => updateField("imageUrl", url)}
+          onChange={(e) => updateField("imageUrl", e.target.value)}
+          maxLength={255}
+          aria-invalid={!!errors.imageUrl}
+          className={errors.imageUrl ? "border-destructive" : ""}
         />
-      </div>
-    </div>
-  </fieldset>
-);
-
-const GrowthRequirementsSection = ({ form, updateField }: FormSectionProps) => (
-  <fieldset>
-    <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-      <Sprout className="h-4 w-4 text-muted-foreground/60" /> Growth
-      Requirements
-    </legend>
-    <div className="grid grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="sp-temp">Optimal Temperature *</Label>
-        <Input
-          id="sp-temp"
-          placeholder="e.g., 20–25°C"
-          value={form.optimalTemp}
-          onChange={(e) => updateField("optimalTemp", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="sp-hum">Humidity Range</Label>
-        <Input
-          id="sp-hum"
-          placeholder="e.g., 50–70%"
-          value={form.humidity}
-          onChange={(e) => updateField("humidity", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="sp-light">Light Requirement</Label>
-        <Input
-          id="sp-light"
-          placeholder="e.g., Full Sun (6-8 hrs)"
-          value={form.lightRequirement}
-          onChange={(e) => updateField("lightRequirement", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="sp-water">Water Requirement</Label>
-        <Input
-          id="sp-water"
-          placeholder="e.g., Moderate — consistent moisture"
-          value={form.waterRequirement}
-          onChange={(e) => updateField("waterRequirement", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2 col-span-2">
-        <Label htmlFor="sp-soil">Soil Type</Label>
-        <Input
-          id="sp-soil"
-          placeholder="e.g., Well-drained loamy soil, pH 6.0–6.8"
-          value={form.soilType}
-          onChange={(e) => updateField("soilType", e.target.value)}
-        />
-      </div>
-    </div>
-  </fieldset>
-);
-
-const PhysicalSection = ({ form, updateField }: FormSectionProps) => (
-  <fieldset>
-    <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-      <Ruler className="h-4 w-4 text-muted-foreground/60" /> Physical
-      Characteristics
-    </legend>
-    <div className="grid grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="sp-maturity">Maturity Days</Label>
-        <Input
-          id="sp-maturity"
-          type="number"
-          min="0"
-          placeholder="e.g., 70"
-          value={form.maturityDays}
-          onChange={(e) => updateField("maturityDays", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="sp-height">Max Height</Label>
-        <Input
-          id="sp-height"
-          placeholder="e.g., 1.5–3 m"
-          value={form.maxHeight}
-          onChange={(e) => updateField("maxHeight", e.target.value)}
-        />
+        {errors.imageUrl && (
+          <p className="text-xs text-destructive">{errors.imageUrl}</p>
+        )}
+        {form.imageUrl && !errors.imageUrl && (
+          <ImageUpload
+            value={form.imageUrl}
+            onChange={(url) => updateField("imageUrl", url)}
+          />
+        )}
       </div>
     </div>
   </fieldset>

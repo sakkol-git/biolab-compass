@@ -1,20 +1,29 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  * usePlantSpeciesView — All state + logic for the Plant Species page.
+ *
+ * Connects to Laravel backend via React Query.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
-import { plantSpeciesData } from "@/data/mockInventoryData";
-import { usePersistedState } from "@/lib/persistence";
 import {
-    checkDuplicate,
-    collectErrors,
-    type FieldErrors,
-    isValid,
-    required,
-    sanitizeForm,
-    throttleSubmit,
+  useCreatePlantSpecies,
+  useDeletePlantSpecies,
+  usePlantSpeciesList,
+  useUpdatePlantSpecies,
+} from "@/hooks/usePlantSpeciesQuery";
+import type { ApiError } from "@/lib/api-client";
+import {
+  collectErrors,
+  type FieldErrors,
+  isValid,
+  maxLength,
+  required,
+  sanitizeForm,
+  throttleSubmit,
+  validate,
+  validUrl,
 } from "@/lib/validation";
 import type { PlantSpecies } from "@/types/inventory";
 import type { LucideIcon } from "lucide-react";
@@ -37,18 +46,10 @@ export interface SpeciesForm {
   scientificName: string;
   family: string;
   growthType: string;
-  optimalTemp: string;
+  nativeRegion: string;
+  propagationMethod: string;
   description: string;
   imageUrl: string;
-  nativeRegion: string;
-  lightRequirement: string;
-  waterRequirement: string;
-  soilType: string;
-  humidity: string;
-  propagation: string;
-  maturityDays: string;
-  maxHeight: string;
-  tags: string;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -67,36 +68,67 @@ const EMPTY_FORM: SpeciesForm = {
   khmerName: "",
   scientificName: "",
   family: "",
-  growthType: "Annual",
-  optimalTemp: "",
+  growthType: "annual",
+  nativeRegion: "",
+  propagationMethod: "",
   description: "",
   imageUrl: "",
-  nativeRegion: "",
-  lightRequirement: "",
-  waterRequirement: "",
-  soilType: "",
-  humidity: "",
-  propagation: "",
-  maturityDays: "",
-  maxHeight: "",
-  tags: "",
 };
 
-// Map mock data to include icons
-const SEED_DATA: SpeciesItem[] = plantSpeciesData.map((species) => ({
-  ...species,
-  icon: FAMILY_ICONS[species.family || "Other"]?.icon || Leaf,
-  color: FAMILY_ICONS[species.family || "Other"]?.color || "hsl(175, 65%, 35%)",
-}));
+// Helper: enrich PlantSpecies with UI icon/color
+function toSpeciesItem(species: PlantSpecies): SpeciesItem {
+  return {
+    ...species,
+    icon: FAMILY_ICONS[species.family || "Other"]?.icon || Leaf,
+    color:
+      FAMILY_ICONS[species.family || "Other"]?.color || "hsl(175, 65%, 35%)",
+  };
+}
+
+// ─── Backend Error Field Map ────────────────────────────────────────────────
+
+const BACKEND_FIELD_MAP: Record<string, keyof SpeciesForm> = {
+  common_name: "commonName",
+  khmer_name: "khmerName",
+  scientific_name: "scientificName",
+  family: "family",
+  growth_type: "growthType",
+  native_region: "nativeRegion",
+  propagation_method: "propagationMethod",
+  description: "description",
+  image_url: "imageUrl",
+};
+
+function mapBackendErrors(
+  errors: Record<string, string[]>,
+): FieldErrors<keyof SpeciesForm> {
+  const mapped: FieldErrors<keyof SpeciesForm> = {};
+  for (const [key, msgs] of Object.entries(errors)) {
+    const field = BACKEND_FIELD_MAP[key];
+    if (field) mapped[field] = msgs[0];
+  }
+  return mapped;
+}
 
 // ─── Hook ──────────────────────────────────────────────────────────────────
 
 export function usePlantSpeciesView() {
   const navigate = useNavigate();
-  const [items, setItems] = usePersistedState<SpeciesItem[]>(
-    "plant_species",
-    SEED_DATA,
-  );
+
+  // ── Data from backend ──
+  const {
+    data: rawItems = [],
+    isLoading,
+    isError,
+    error: fetchError,
+  } = usePlantSpeciesList();
+
+  const items: SpeciesItem[] = rawItems.map(toSpeciesItem);
+
+  // ── Mutations ──
+  const createMutation = useCreatePlantSpecies();
+  const updateMutation = useUpdatePlantSpecies();
+  const deleteMutation = useDeletePlantSpecies();
   const [searchQuery, setSearchQuery] = useState("");
   const [familyFilter, setFamilyFilter] = useState("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -139,12 +171,12 @@ export function usePlantSpeciesView() {
     0,
   );
   const activeSpecies = items.filter(
-    (sp) => sp.isActive && sp.varietyCount > 0,
+    (sp) => sp.isActive !== false && sp.varietyCount > 0,
   ).length;
 
   const quickStats: Stat[] = [
     { label: "Total Species", value: items.length, color: "primary" },
-    { label: "Active", value: activeSpecies, color: "success" },
+    { label: "Active", value: activeSpecies, color: "primary" },
     {
       label: "Varieties",
       value: totalVarieties.toLocaleString(),
@@ -164,7 +196,7 @@ export function usePlantSpeciesView() {
     : "Fill in the details to register a new plant species.";
 
   const canSubmitForm = Boolean(
-    form.commonName && form.scientificName && form.family && form.optimalTemp,
+    form.commonName && form.scientificName && form.growthType,
   );
 
   // ── Actions ──
@@ -193,19 +225,11 @@ export function usePlantSpeciesView() {
       khmerName: species.khmerName || "",
       scientificName: species.scientificName,
       family: species.family || "",
-      growthType: species.growthType || "Annual",
-      optimalTemp: species.optimalTemp || "",
-      description: species.description || "",
-      imageUrl: species.images?.[0] || "",
+      growthType: species.growthType || "annual",
       nativeRegion: species.nativeRegion || "",
-      lightRequirement: species.lightRequirement || "",
-      waterRequirement: species.waterRequirement || "",
-      soilType: species.soilType || "",
-      humidity: species.humidity || "",
-      propagation: species.propagation || "",
-      maturityDays: species.maturityDays ? String(species.maturityDays) : "",
-      maxHeight: species.maxHeight || "",
-      tags: species.tags ? species.tags.join(", ") : "",
+      propagationMethod: species.propagationMethod || "",
+      description: species.description || "",
+      imageUrl: species.imageUrl || "",
     });
     setFormOpen(true);
   };
@@ -230,30 +254,42 @@ export function usePlantSpeciesView() {
 
     // ── Validate ──
     const errors = collectErrors<keyof SpeciesForm>({
-      commonName: required(clean.commonName, "Common name"),
-      scientificName:
-        required(clean.scientificName, "Scientific name") ||
-        checkDuplicate(
-          items,
-          "scientificName",
-          clean.scientificName,
-          editingItem?.id,
-        ),
-      family: required(clean.family, "Family"),
-      optimalTemp: required(clean.optimalTemp, "Optimal temperature"),
-      khmerName: undefined,
-      growthType: undefined,
+      commonName: validate(
+        clean.commonName,
+        (v) => required(v, "Common name"),
+        (v) => maxLength(v, 255, "Common name"),
+      ),
+      scientificName: validate(
+        clean.scientificName,
+        (v) => required(v, "Scientific name"),
+        (v) => maxLength(v, 255, "Scientific name"),
+      ),
+      growthType: validate(
+        clean.growthType,
+        (v) => required(v, "Growth type"),
+        (v) =>
+          ["annual", "perennial", "biennial"].includes(v)
+            ? undefined
+            : "Growth type must be Annual, Perennial, or Biennial",
+      ),
+      khmerName: clean.khmerName
+        ? maxLength(clean.khmerName, 255, "Khmer name")
+        : undefined,
+      family: clean.family ? maxLength(clean.family, 255, "Family") : undefined,
+      nativeRegion: clean.nativeRegion
+        ? maxLength(clean.nativeRegion, 255, "Native region")
+        : undefined,
+      propagationMethod: clean.propagationMethod
+        ? maxLength(clean.propagationMethod, 255, "Propagation method")
+        : undefined,
       description: undefined,
-      imageUrl: undefined,
-      nativeRegion: undefined,
-      lightRequirement: undefined,
-      waterRequirement: undefined,
-      soilType: undefined,
-      humidity: undefined,
-      propagation: undefined,
-      maturityDays: undefined,
-      maxHeight: undefined,
-      tags: undefined,
+      imageUrl: clean.imageUrl
+        ? validate(
+            clean.imageUrl,
+            (v) => maxLength(v, 255, "Image URL"),
+            (v) => validUrl(v, "Image URL"),
+          )
+        : undefined,
     });
     if (!isValid(errors)) {
       setFormErrors(errors);
@@ -262,92 +298,44 @@ export function usePlantSpeciesView() {
     }
     setFormErrors({});
 
-    const fInfo = FAMILY_ICONS[clean.family] || FAMILY_ICONS.Other;
-    const parsedTags = clean.tags
-      ? clean.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : [];
+    const formData = clean as unknown as Record<string, string>;
 
     if (editingItem) {
-      setItems((prev) =>
-        prev.map((s) =>
-          s.id === editingItem.id
-            ? {
-                ...s,
-                commonName: clean.commonName,
-                scientificName: clean.scientificName,
-                khmerName: clean.khmerName || undefined,
-                family: clean.family,
-                growthType: clean.growthType,
-                optimalTemp: clean.optimalTemp,
-                description: clean.description,
-                images: clean.imageUrl ? [clean.imageUrl] : s.images,
-                nativeRegion: clean.nativeRegion || undefined,
-                lightRequirement: clean.lightRequirement || undefined,
-                waterRequirement: clean.waterRequirement || undefined,
-                soilType: clean.soilType || undefined,
-                humidity: clean.humidity || undefined,
-                propagation: clean.propagation || undefined,
-                maturityDays: clean.maturityDays
-                  ? Number(clean.maturityDays)
-                  : undefined,
-                maxHeight: clean.maxHeight || undefined,
-                tags: parsedTags.length > 0 ? parsedTags : undefined,
-                icon: fInfo.icon,
-                color: fInfo.color,
-                updatedAt: new Date().toISOString(),
-              }
-            : s,
-        ),
+      updateMutation.mutate(
+        { id: editingItem.id, form: formData },
+        {
+          onSuccess: () => {
+            setFormOpen(false);
+            setForm(EMPTY_FORM);
+            setEditingItem(null);
+            toast.success(`${clean.commonName} updated successfully`);
+          },
+          onError: (err) => {
+            const apiErr = err as unknown as ApiError;
+            if (apiErr.errors) {
+              setFormErrors(mapBackendErrors(apiErr.errors));
+            }
+            toast.error(apiErr.message || "Failed to update species");
+          },
+        },
       );
     } else {
-      const newId = `SP-${String(items.length + 1).padStart(4, "0")}`;
-      const newItem: SpeciesItem = {
-        id: newId,
-        speciesCode: `SP-${String(items.length + 1).padStart(4, "0")}`,
-        commonName: clean.commonName,
-        scientificName: clean.scientificName,
-        khmerName: clean.khmerName || undefined,
-        family: clean.family,
-        genus: clean.family, // Use family as genus for simplicity
-        growthType: clean.growthType,
-        optimalTemp: clean.optimalTemp,
-        description: clean.description,
-        isActive: true,
-        varietyCount: 0,
-        sampleCount: 0,
-        totalQuantity: 0,
-        quantityUnit: "seeds",
-        icon: fInfo.icon,
-        color: fInfo.color,
-        images: clean.imageUrl ? [clean.imageUrl] : [],
-        nativeRegion: clean.nativeRegion || undefined,
-        lightRequirement: clean.lightRequirement || undefined,
-        waterRequirement: clean.waterRequirement || undefined,
-        soilType: clean.soilType || undefined,
-        humidity: clean.humidity || undefined,
-        propagation: clean.propagation || undefined,
-        maturityDays: clean.maturityDays
-          ? Number(clean.maturityDays)
-          : undefined,
-        maxHeight: clean.maxHeight || undefined,
-        tags: parsedTags.length > 0 ? parsedTags : undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setItems((prev) => [...prev, newItem]);
+      createMutation.mutate(formData, {
+        onSuccess: () => {
+          setFormOpen(false);
+          setForm(EMPTY_FORM);
+          setEditingItem(null);
+          toast.success(`${clean.commonName} added successfully`);
+        },
+        onError: (err) => {
+          const apiErr = err as unknown as ApiError;
+          if (apiErr.errors) {
+            setFormErrors(mapBackendErrors(apiErr.errors));
+          }
+          toast.error(apiErr.message || "Failed to create species");
+        },
+      });
     }
-
-    setFormOpen(false);
-    setForm(EMPTY_FORM);
-    toast.success(
-      isEditing
-        ? `${clean.commonName} updated successfully`
-        : `${clean.commonName} added successfully`,
-    );
-    setEditingItem(null);
   };
 
   // ── Delete Species (with confirmation) ──
@@ -360,10 +348,17 @@ export function usePlantSpeciesView() {
 
   const confirmDeleteSpecies = () => {
     deleteDialog.confirm((id) => {
-      setItems((prev) => prev.filter((s) => s.id !== id));
-      toast.success("Species deleted");
+      deleteMutation.mutate(id, {
+        onSuccess: () => toast.success("Species deleted"),
+        onError: (err) => {
+          const apiErr = err as unknown as ApiError;
+          toast.error(apiErr.message || "Failed to delete species");
+        },
+      });
     });
   };
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return {
     filteredItems,
@@ -390,6 +385,10 @@ export function usePlantSpeciesView() {
     closeForm,
     updateFormField,
     submitSpeciesForm,
+    isSubmitting,
+    isLoading,
+    isError,
+    fetchError,
     // Delete
     deleteDialog,
     requestDeleteSpecies,

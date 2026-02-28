@@ -66,6 +66,15 @@ export function validPhone(value: string, label = "Phone"): string | undefined {
   return undefined;
 }
 
+export function validUrl(value: string, label = "URL"): string | undefined {
+  try {
+    new URL(value);
+    return undefined;
+  } catch {
+    return `${label} must be a valid URL (e.g., https://example.com/image.jpg)`;
+  }
+}
+
 // ─── Date Validators (BL-009) ───────────────────────────────────────────────
 
 export function dateAfter(

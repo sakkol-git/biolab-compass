@@ -11,19 +11,12 @@ export interface SpeciesDetail {
   khmerName?: string;
   family: string;
   growthType: string;
-  optimalTemp: string;
   activeBatches: number;
   totalPlants: number;
   description: string;
   imageUrl?: string;
   nativeRegion: string;
-  lightRequirement: string;
-  waterRequirement: string;
-  soilType: string;
-  humidity: string;
-  propagation: string;
-  maturityDays: number;
-  maxHeight: string;
+  propagationMethod: string;
   associatedBatches: {
     id: string;
     stage: string;
@@ -31,7 +24,6 @@ export interface SpeciesDetail {
     location: string;
     startDate: string;
   }[];
-  tags: string[];
 }
 
 export const speciesDetailData: Record<string, SpeciesDetail> = {
@@ -41,8 +33,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Tomato",
     khmerName: "ប៉េងប៉ោះ",
     family: "Solanaceae",
-    growthType: "Annual",
-    optimalTemp: "18–25°C",
+    growthType: "annual",
     activeBatches: 1,
     totalPlants: 150,
     description:
@@ -50,13 +41,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     imageUrl:
       "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=800&h=400&fit=crop",
     nativeRegion: "Western South America",
-    lightRequirement: "Full Sun (6-8 hrs)",
-    waterRequirement: "Moderate — consistent moisture",
-    soilType: "Well-drained loamy soil, pH 6.0–6.8",
-    humidity: "50–70%",
-    propagation: "Seed, Stem Cuttings",
-    maturityDays: 70,
-    maxHeight: "1.5–3 m",
+    propagationMethod: "Seed, Stem Cuttings",
     associatedBatches: [
       {
         id: "PB-001",
@@ -66,7 +51,6 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
         startDate: "2025-11-15",
       },
     ],
-    tags: ["model organism", "fruit development", "solanaceae"],
   },
   "SP-002": {
     id: "SP-002",
@@ -74,8 +58,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Thale Cress",
     khmerName: "ស្មៅថែល",
     family: "Brassicaceae",
-    growthType: "Annual",
-    optimalTemp: "20–24°C",
+    growthType: "annual",
     activeBatches: 1,
     totalPlants: 300,
     description:
@@ -83,13 +66,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     imageUrl:
       "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=400&fit=crop",
     nativeRegion: "Eurasia & North Africa",
-    lightRequirement: "Moderate (16h/8h photoperiod)",
-    waterRequirement: "Low — drought tolerant",
-    soilType: "Standard potting mix, pH 5.5–6.5",
-    humidity: "40–60%",
-    propagation: "Seed",
-    maturityDays: 42,
-    maxHeight: "25–35 cm",
+    propagationMethod: "Seed",
     associatedBatches: [
       {
         id: "PB-002",
@@ -99,7 +76,6 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
         startDate: "2026-01-03",
       },
     ],
-    tags: ["model organism", "genomics", "genetics"],
   },
   "SP-003": {
     id: "SP-003",
@@ -107,8 +83,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Maize",
     khmerName: "ពោត",
     family: "Poaceae",
-    growthType: "Annual",
-    optimalTemp: "21–30°C",
+    growthType: "annual",
     activeBatches: 1,
     totalPlants: 500,
     description:
@@ -116,13 +91,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     imageUrl:
       "https://images.unsplash.com/photo-1601593768498-8de537434af0?w=800&h=400&fit=crop",
     nativeRegion: "Mesoamerica",
-    lightRequirement: "Full Sun (8+ hrs)",
-    waterRequirement: "High — regular watering",
-    soilType: "Rich, well-drained, pH 5.8–7.0",
-    humidity: "50–80%",
-    propagation: "Seed",
-    maturityDays: 90,
-    maxHeight: "2–3 m",
+    propagationMethod: "Seed",
     associatedBatches: [
       {
         id: "PB-003",
@@ -132,7 +101,6 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
         startDate: "2025-09-20",
       },
     ],
-    tags: ["cereal crop", "biofuel", "breeding"],
   },
   "SP-004": {
     id: "SP-004",
@@ -140,8 +108,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Rice",
     khmerName: "ស្រូវ",
     family: "Poaceae",
-    growthType: "Annual",
-    optimalTemp: "25–35°C",
+    growthType: "annual",
     activeBatches: 1,
     totalPlants: 200,
     description:
@@ -149,13 +116,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     imageUrl:
       "https://images.unsplash.com/photo-1536054953991-8a5a0e5e5e04?w=800&h=400&fit=crop",
     nativeRegion: "Southeast Asia",
-    lightRequirement: "Full Sun",
-    waterRequirement: "Very High — paddy conditions",
-    soilType: "Clayey/loamy, pH 5.5–6.5",
-    humidity: "70–90%",
-    propagation: "Seed",
-    maturityDays: 120,
-    maxHeight: "1–1.8 m",
+    propagationMethod: "Seed",
     associatedBatches: [
       {
         id: "PB-004",
@@ -165,7 +126,6 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
         startDate: "2025-12-01",
       },
     ],
-    tags: ["staple crop", "genomics", "monocot"],
   },
   "SP-005": {
     id: "SP-005",
@@ -173,8 +133,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Tobacco",
     khmerName: "ថ្នាំជក់",
     family: "Solanaceae",
-    growthType: "Annual",
-    optimalTemp: "20–30°C",
+    growthType: "annual",
     activeBatches: 1,
     totalPlants: 45,
     description:
@@ -182,13 +141,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     imageUrl:
       "https://images.unsplash.com/photo-1515150144380-bca9f1650ed9?w=800&h=400&fit=crop",
     nativeRegion: "The Americas",
-    lightRequirement: "Full Sun (6-8 hrs)",
-    waterRequirement: "Moderate",
-    soilType: "Sandy loam, pH 5.8–6.5",
-    humidity: "50–70%",
-    propagation: "Seed",
-    maturityDays: 80,
-    maxHeight: "1–2 m",
+    propagationMethod: "Seed",
     associatedBatches: [
       {
         id: "PB-005",
@@ -198,7 +151,6 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
         startDate: "2025-08-10",
       },
     ],
-    tags: ["transient expression", "biopharming", "molecular biology"],
   },
   "SP-006": {
     id: "SP-006",
@@ -206,8 +158,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Soybean",
     khmerName: "សណ្ដែកសៀង",
     family: "Fabaceae",
-    growthType: "Annual",
-    optimalTemp: "20–30°C",
+    growthType: "annual",
     activeBatches: 0,
     totalPlants: 0,
     description:
@@ -215,13 +166,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     imageUrl:
       "https://images.unsplash.com/photo-1599420186946-7a27d18a7d86?w=800&h=400&fit=crop",
     nativeRegion: "East Asia",
-    lightRequirement: "Full Sun",
-    waterRequirement: "Moderate",
-    soilType: "Well-drained, pH 6.0–7.0",
-    humidity: "50–70%",
-    propagation: "Seed",
-    maturityDays: 100,
-    maxHeight: "0.6–1.2 m",
+    propagationMethod: "Seed",
     associatedBatches: [
       {
         id: "PB-006",
@@ -231,7 +176,6 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
         startDate: "2025-10-05",
       },
     ],
-    tags: ["legume", "nitrogen fixation", "protein"],
   },
   "SP-007": {
     id: "SP-007",
@@ -239,8 +183,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     commonName: "Wheat",
     khmerName: "ស្រូវសាលី",
     family: "Poaceae",
-    growthType: "Annual",
-    optimalTemp: "15–20°C",
+    growthType: "annual",
     activeBatches: 1,
     totalPlants: 400,
     description:
@@ -248,13 +191,7 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
     imageUrl:
       "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&h=400&fit=crop",
     nativeRegion: "Fertile Crescent",
-    lightRequirement: "Full Sun",
-    waterRequirement: "Moderate",
-    soilType: "Loamy, pH 6.0–7.0",
-    humidity: "40–60%",
-    propagation: "Seed",
-    maturityDays: 120,
-    maxHeight: "0.7–1.2 m",
+    propagationMethod: "Seed",
     associatedBatches: [
       {
         id: "PB-007",
@@ -264,7 +201,6 @@ export const speciesDetailData: Record<string, SpeciesDetail> = {
         startDate: "2026-01-20",
       },
     ],
-    tags: ["cereal crop", "polyploidy", "breeding"],
   },
 };
 

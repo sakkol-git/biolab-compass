@@ -1,25 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT SPECIES DETAIL — Typed Custom Hook (Phase 3.2 — Imperative Shell)
+// PLANT SPECIES DETAIL — Typed Custom Hook (Backend-Connected)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// Owns data fetching, loading state, and config assembly.
+// Fetches single species from Laravel backend via React Query.
 // Returns a domain-ready view model — never raw API responses.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { speciesDetailData, type SpeciesDetail } from "@/data/mockDetailData";
-import { plantSamplesData, plantVarietiesData } from "@/data/mockInventoryData";
-import {
-    Clock,
-    Droplets,
-    FlaskConical,
-    Flower2,
-    Layers,
-    Leaf,
-    Ruler,
-    Sprout,
-    Tag,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { usePlantSpeciesById } from "@/hooks/usePlantSpeciesQuery";
+import type { PlantSpecies } from "@/types/inventory";
+import { Flower2, Layers, Leaf, Sprout } from "lucide-react";
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { SPECIES_ICON_COLOR, buildActions } from "./domain";
 import type { SpeciesPageConfig } from "./types";
@@ -34,13 +24,10 @@ interface UseSpeciesDetailResult {
 
 // ─── Config Assembly (pure transform) ────────────────────────────────────
 
-function assembleConfig(
-  data: SpeciesDetail,
-  speciesId: string,
-): SpeciesPageConfig {
-  // Get varieties and samples for this species
-  const varieties = plantVarietiesData.filter((v) => v.speciesId === speciesId);
-  const samples = plantSamplesData.filter((s) => s.speciesId === speciesId);
+function assembleConfig(data: PlantSpecies): SpeciesPageConfig {
+  const title = data.commonName
+    ? data.commonName + (data.khmerName ? ` (${data.khmerName})` : "")
+    : data.scientificName || `Species #${data.id}`;
 
   return {
     header: {
@@ -48,9 +35,9 @@ function assembleConfig(
       backLabel: "All Species",
       icon: Leaf,
       iconColor: SPECIES_ICON_COLOR,
-      title: data.commonName + (data.khmerName ? ` (${data.khmerName})` : ""),
-      subtitle: data.scientificName,
-      id: data.id,
+      title,
+      subtitle: data.scientificName || "",
+      id: data.id && data.id !== "null" ? data.id : "",
     },
 
     heroImage: data.imageUrl
@@ -59,28 +46,16 @@ function assembleConfig(
 
     kpiStrip: [
       {
-        label: "Active Batches",
-        value: data.activeBatches,
+        label: "Varieties",
+        value: data.varietyCount,
         icon: Layers,
         color: "hsl(210, 60%, 50%)",
       },
       {
-        label: "Total Plants",
-        value: data.totalPlants.toLocaleString(),
+        label: "Samples",
+        value: data.sampleCount,
         icon: Sprout,
         color: SPECIES_ICON_COLOR,
-      },
-      {
-        label: "Maturity",
-        value: `${data.maturityDays} days`,
-        icon: Clock,
-        color: "hsl(38, 92%, 50%)",
-      },
-      {
-        label: "Max Height",
-        value: data.maxHeight,
-        icon: Ruler,
-        color: "hsl(175, 65%, 35%)",
       },
     ],
 
@@ -91,57 +66,20 @@ function assembleConfig(
         kind: "botanical-description",
         title: "Botanical Description",
         icon: Flower2,
-        description: data.description,
+        description: data.description || "No description available.",
         fields: [
-          { label: "Family", value: data.family },
-          { label: "Growth Type", value: data.growthType },
-          { label: "Native Region", value: data.nativeRegion },
-          { label: "Propagation", value: data.propagation },
-          { label: "Optimal Temp", value: data.optimalTemp },
-          { label: "Max Height", value: data.maxHeight },
+          { label: "Family", value: data.family || "—" },
+          { label: "Growth Type", value: data.growthType || "—" },
+          { label: "Native Region", value: data.nativeRegion || "—" },
+          {
+            label: "Propagation Method",
+            value: data.propagationMethod || "—",
+          },
         ],
-      },
-      {
-        kind: "associated-batches",
-        title: "Current Stock",
-        icon: Sprout,
-        batches: data.associatedBatches,
-        viewAllHref: `/plant-stock?species=${encodeURIComponent(data.scientificName)}`,
-      },
-      {
-        kind: "varieties-list",
-        title: "Varieties",
-        icon: Sprout,
-        varieties: varieties,
-      },
-      {
-        kind: "samples-list",
-        title: "Samples",
-        icon: FlaskConical,
-        samples: samples,
       },
     ],
 
-    sidebarSections: [
-      {
-        kind: "care-requirements",
-        title: "Care Requirements",
-        icon: Droplets,
-        fields: [
-          { label: "Light", value: data.lightRequirement },
-          { label: "Water", value: data.waterRequirement },
-          { label: "Soil", value: data.soilType },
-          { label: "Humidity", value: data.humidity },
-          { label: "Optimal Temperature", value: data.optimalTemp },
-        ],
-      },
-      {
-        kind: "tags",
-        title: "Tags",
-        icon: Tag,
-        tags: data.tags,
-      },
-    ],
+    sidebarSections: [],
   };
 }
 
@@ -149,32 +87,15 @@ function assembleConfig(
 
 export function useSpeciesDetail(): UseSpeciesDetailResult {
   const { id } = useParams<{ id: string }>();
-  const [data, setData] = useState<SpeciesDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    setNotFound(false);
+  // Guard: treat the literal string "null" or "undefined" in the URL as not-found
+  const safeId = id && id !== "null" && id !== "undefined" ? id : undefined;
 
-    const timer = setTimeout(() => {
-      if (id && speciesDetailData[id]) {
-        setData(speciesDetailData[id]);
-      } else {
-        setNotFound(true);
-      }
-      setLoading(false);
-    }, 400);
+  const { data, isLoading, isError } = usePlantSpeciesById(safeId);
 
-    return () => clearTimeout(timer);
-  }, [id]);
+  const config = useMemo(() => (data ? assembleConfig(data) : null), [data]);
 
-  const config = useMemo(
-    () => (data && id ? assembleConfig(data, id) : null),
-    [data, id],
-  );
-
-  if (loading) return { state: "loading", id, config: null };
-  if (notFound || !data) return { state: "not-found", id, config: null };
+  if (isLoading) return { state: "loading", id, config: null };
+  if (isError || !data) return { state: "not-found", id, config: null };
   return { state: "ready", id, config };
 }

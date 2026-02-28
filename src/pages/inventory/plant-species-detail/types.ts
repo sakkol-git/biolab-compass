@@ -56,20 +56,6 @@ export interface AssociatedBatchesSection {
   viewAllHref: string;
 }
 
-export interface CareRequirementsSection {
-  readonly kind: "care-requirements";
-  title: string;
-  icon: LucideIcon;
-  fields: InfoField[];
-}
-
-export interface TagsSection {
-  readonly kind: "tags";
-  title: string;
-  icon: LucideIcon;
-  tags: string[];
-}
-
 export interface VarietiesListSection {
   readonly kind: "varieties-list";
   title: string;
@@ -87,8 +73,6 @@ export interface SamplesListSection {
 export type DetailSection =
   | BotanicalDescriptionSection
   | AssociatedBatchesSection
-  | CareRequirementsSection
-  | TagsSection
   | VarietiesListSection
   | SamplesListSection;
 

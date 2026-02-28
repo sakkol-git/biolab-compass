@@ -48,42 +48,25 @@ export type SourceType = "Field" | "Lab" | "Purchase" | "Donation" | "Exchange";
 // ─── Plant Species (TOP LEVEL) ──────────────────────────────────────────────
 export interface PlantSpecies extends Auditable {
   id: string;
-  speciesCode: string; // SP-0001, SP-0002, etc.
   scientificName: string;
   commonName: string;
   khmerName?: string;
 
-  // Taxonomy
+  // Classification Info (from migration)
   family?: string;
-  genus?: string;
-  species?: string;
-  synonyms?: string[];
-
-  // Conservation
-  conservationStatus?: ConservationStatus;
-
-  // Growing Information
-  growthType?: string; // Annual, Perennial, etc.
+  growthType?: string; // 'annual' | 'perennial' | 'biennial'
   nativeRegion?: string;
-  lightRequirement?: string;
-  waterRequirement?: string;
-  soilType?: string;
-  humidity?: string;
-  optimalTemp?: string;
-  propagation?: string;
-  maturityDays?: number;
-  maxHeight?: string;
+  propagationMethod?: string;
 
-  // Administrative
+  // Additional Info (from migration)
   description?: string;
-  tags?: string[];
-  isActive: boolean;
-  images?: string[];
+  imageUrl?: string;
 
-  // Computed fields (read-only)
+  // Computed / UI display fields (not stored in plant_species table)
+  isActive?: boolean; // derived from deleted_at (softDeletes)
   varietyCount: number;
   sampleCount: number;
-  totalQuantity?: number; // Rollup of all sample quantities
+  totalQuantity?: number;
   quantityUnit?: string;
 
   // Relations (lazy-loaded)

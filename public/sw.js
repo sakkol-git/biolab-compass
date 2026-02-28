@@ -1,11 +1,5 @@
-const CACHE_NAME = "plant-lap-laboratory-v3";
-const STATIC_ASSETS = [
-  "/",
-  "/index.html",
-  "/favicon.ico",
-  "/favicon.svg",
-  "/manifest.json",
-];
+const CACHE_NAME = "plant-lap-laboratory-v4";
+const STATIC_ASSETS = ["/", "/index.html", "/favicon.svg", "/manifest.json"];
 
 // Install — cache shell
 self.addEventListener("install", (event) => {
@@ -32,6 +26,9 @@ self.addEventListener("activate", (event) => {
 // Fetch — network-first for navigation, cache-first for assets
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+
+  // Never intercept API calls — always go to the network
+  if (request.url.includes("/api/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(

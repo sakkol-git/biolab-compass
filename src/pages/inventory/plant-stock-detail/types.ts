@@ -1,12 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT STOCK DETAIL — Domain Types & Configuration Contracts (Phase 1)
-// ═══════════════════════════════════════════════════════════════════════════
-//
-// Mirrors the Equipment/Species type architecture exactly:
-// - Shared atomic shapes (KpiStat, InfoField, ActionButton, etc.)
-// - Closed discriminated union for every renderable section
-// - Page-level config that bundles header + hero + KPI + sections
-// - Registry contract enforced via `satisfies`
+// PLANT STOCK DETAIL — Domain Types & Configuration Contracts
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { LucideIcon } from "lucide-react";
@@ -28,20 +21,6 @@ import type {
     KpiStat,
 } from "@/components/detail/detail-types";
 
-// ─── Domain-Specific Data Shapes ─────────────────────────────────────────
-
-export interface GrowthMilestone {
-  date: string;
-  event: string;
-}
-
-export interface EnvironmentalReading {
-  date: string;
-  temp: string;
-  humidity: string;
-  light: string;
-}
-
 // ─── Section Configurations (Discriminated Union) ────────────────────────
 
 export interface BatchInfoSection {
@@ -51,55 +30,6 @@ export interface BatchInfoSection {
   fields: InfoField[];
   statusBadge: ReactNode;
   notes: string | null;
-}
-
-export interface HealthScoreSection {
-  readonly kind: "health-score";
-  title: string;
-  icon: LucideIcon;
-  score: number;
-  description: string;
-}
-
-export interface EnvironmentalLogSection {
-  readonly kind: "environmental-log";
-  title: string;
-  icon: LucideIcon;
-  readings: EnvironmentalReading[];
-}
-
-export interface RelatedVarietyItem {
-  id: string;
-  name: string;
-  uniqueCode: string;
-  ownershipUserName: string;
-  status: string;
-  dateBrought: string;
-}
-
-export interface RelatedVarietiesSection {
-  readonly kind: "related-varieties";
-  title: string;
-  icon: LucideIcon;
-  items: RelatedVarietyItem[];
-  viewAllHref: string;
-}
-
-export interface RelatedSampleItem {
-  id: string;
-  name: string;
-  uniqueCode: string;
-  ownershipUserName: string;
-  status: string;
-  dateBrought: string;
-}
-
-export interface RelatedSamplesSection {
-  readonly kind: "related-samples";
-  title: string;
-  icon: LucideIcon;
-  items: RelatedSampleItem[];
-  viewAllHref: string;
 }
 
 export interface ParentSpeciesSection {
@@ -120,10 +50,6 @@ export interface QuickInfoSection {
 
 export type DetailSection =
   | BatchInfoSection
-  | HealthScoreSection
-  | EnvironmentalLogSection
-  | RelatedVarietiesSection
-  | RelatedSamplesSection
   | ParentSpeciesSection
   | QuickInfoSection;
 

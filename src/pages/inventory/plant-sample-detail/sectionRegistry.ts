@@ -4,7 +4,6 @@
 
 import type { SectionRendererMap } from "./types";
 
-import ImagesSection from "./sections/ImagesSection";
 import NotesSection from "./sections/NotesSection";
 import OwnershipSection from "./sections/OwnershipSection";
 import SampleInfoSection from "./sections/SampleInfoSection";
@@ -15,5 +14,4 @@ export const sectionRegistry = {
   ownership: OwnershipSection,
   storage: StorageSection,
   notes: NotesSection,
-  images: ImagesSection,
 } satisfies SectionRendererMap;

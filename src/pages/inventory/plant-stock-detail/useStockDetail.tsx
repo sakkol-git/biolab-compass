@@ -1,34 +1,19 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT STOCK DETAIL — Typed Custom Hook (Phase 3.2 — Imperative Shell)
+// PLANT STOCK DETAIL — Typed Custom Hook (Backend-Connected)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// Owns data fetching, loading state, and config assembly.
+// Fetches single stock from Laravel backend via React Query.
 // Returns a domain-ready view model — never raw API responses.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { Badge } from "@/components/ui/badge";
-import { batchDetailData, type BatchDetail } from "@/data/mockDetailData";
-import { plantSamplesData, plantVarietiesData } from "@/data/mockInventoryData";
+import { usePlantStockById } from "@/hooks/usePlantStockQuery";
 import { cn } from "@/lib/utils";
-import {
-    Activity,
-    Beaker,
-    Clock,
-    HeartPulse,
-    Leaf,
-    MapPin,
-    Sprout,
-    Thermometer,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import type { PlantStockApi } from "@/types/plant-stock";
+import { Clock, Leaf, Package, Sprout } from "lucide-react";
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
-import {
-    buildActions,
-    healthDescription,
-    healthScoreColor,
-    stageColor,
-    statusBadgeClass,
-} from "./domain";
+import { buildActions, statusBadgeClass, statusColor } from "./domain";
 import type { StockPageConfig } from "./types";
 
 // ─── Return Type ─────────────────────────────────────────────────────────
@@ -39,34 +24,33 @@ interface UseStockDetailResult {
   config: StockPageConfig | null;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 // ─── Config Assembly (pure transform) ──────────────────────────────────────
 
-function assembleConfig(data: BatchDetail): StockPageConfig {
-  const color = stageColor(data.stage);
-  const badgeClass = statusBadgeClass(data.status);
+function assembleConfig(data: PlantStockApi): StockPageConfig {
+  const status = data.inventory.status;
+  const color = statusColor(status);
+  const badgeClass = statusBadgeClass(status);
 
-  // Get related varieties and samples for this species
-  const relatedVarieties = plantVarietiesData
-    .filter((variety) => variety.speciesId === data.speciesId)
-    .map((variety) => ({
-      id: variety.id,
-      name: variety.name,
-      uniqueCode: variety.uniqueCode,
-      ownershipUserName: variety.ownershipUserName,
-      status: variety.status,
-      dateBrought: variety.dateBrought,
-    }));
+  const speciesName =
+    data.relations.species?.common_name ||
+    data.relations.species?.scientific_name ||
+    "—";
 
-  const relatedSamples = plantSamplesData
-    .filter((sample) => sample.speciesId === data.speciesId)
-    .map((sample) => ({
-      id: sample.id,
-      name: sample.name,
-      uniqueCode: sample.uniqueCode,
-      ownershipUserName: sample.ownershipUserName,
-      status: sample.status,
-      dateBrought: sample.dateBrought,
-    }));
+  const varietyName = data.relations.variety?.name || null;
+  const sampleName = data.relations.sample?.identity?.name || null;
 
   return {
     header: {
@@ -74,43 +58,35 @@ function assembleConfig(data: BatchDetail): StockPageConfig {
       backLabel: "All Stock",
       icon: Sprout,
       iconColor: color,
-      title: `${data.commonName} Stock`,
-      subtitle: `${data.species} — ${data.stage}`,
-      id: data.id,
+      title: `${speciesName} Stock`,
+      subtitle: varietyName ? `${varietyName} — ${status}` : status,
+      id: String(data.id),
     },
 
-    heroImage: data.imageUrl
-      ? { url: data.imageUrl, alt: data.commonName, fallbackIcon: Sprout }
-      : null,
+    heroImage: null,
 
     kpiStrip: [
       {
-        label: "Quantity",
-        value: data.quantity.toLocaleString(),
+        label: "Total",
+        value: data.inventory.total.toLocaleString(),
+        icon: Package,
+        color: "hsl(145, 63%, 32%)",
+      },
+      {
+        label: "Reserved",
+        value: data.inventory.reserved.toLocaleString(),
+        icon: Package,
+        color: "hsl(38, 92%, 50%)",
+      },
+      {
+        label: "Net Available",
+        value: data.inventory.net_available.toLocaleString(),
         icon: Sprout,
-        color,
-      },
-      {
-        label: "Health Score",
-        value: `${data.healthScore}%`,
-        icon: HeartPulse,
-        color: healthScoreColor(data.healthScore),
-      },
-      {
-        label: "Stage",
-        value: data.stage,
-        icon: Activity,
-        color,
-      },
-      {
-        label: "Location",
-        value: data.location,
-        icon: MapPin,
         color: "hsl(210, 60%, 50%)",
       },
     ],
 
-    actions: buildActions(data.speciesId),
+    actions: buildActions(data.relations.species?.id ?? null),
 
     mainSections: [
       {
@@ -118,72 +94,56 @@ function assembleConfig(data: BatchDetail): StockPageConfig {
         title: "Stock Information",
         icon: Sprout,
         fields: [
+          { label: "Species", value: speciesName },
+          ...(varietyName ? [{ label: "Variety", value: varietyName }] : []),
+          ...(sampleName ? [{ label: "Sample", value: sampleName }] : []),
           {
-            label: "Species",
-            value: data.species,
+            label: "Total Quantity",
+            value: data.inventory.total.toLocaleString(),
           },
-          { label: "Common Name", value: data.commonName },
-          { label: "Source Material", value: data.sourceMaterial },
-          { label: "Sowing Date", value: data.startDate, mono: true },
           {
-            label: "Expected Harvest",
-            value: data.expectedHarvestDate,
-            mono: true,
+            label: "Reserved",
+            value: data.inventory.reserved.toLocaleString(),
           },
-          { label: "Assigned To", value: data.assignedTo },
+          {
+            label: "Net Available",
+            value: data.inventory.net_available.toLocaleString(),
+          },
         ],
         statusBadge: (
-          <Badge className={cn("text-xs", badgeClass)}>{data.status}</Badge>
+          <Badge className={cn("text-xs", badgeClass)}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </Badge>
         ),
-        notes: data.notes || null,
-      },
-      {
-        kind: "health-score",
-        title: "Health Score",
-        icon: HeartPulse,
-        score: data.healthScore,
-        description: healthDescription(data.healthScore),
-      },
-      {
-        kind: "related-varieties",
-        title: "Related Varieties",
-        icon: Sprout,
-        items: relatedVarieties,
-        viewAllHref: `/inventory/plant-varieties?species=${encodeURIComponent(data.species)}`,
-      },
-      {
-        kind: "related-samples",
-        title: "Related Samples",
-        icon: Beaker,
-        items: relatedSamples,
-        viewAllHref: `/inventory/plant-samples?species=${encodeURIComponent(data.species)}`,
+        notes: null,
       },
     ],
 
     sidebarSections: [
-      {
-        kind: "environmental-log",
-        title: "Environmental Log",
-        icon: Thermometer,
-        readings: data.environmentalLog,
-      },
-      {
-        kind: "parent-species",
-        title: "Parent Species",
-        icon: Leaf,
-        commonName: data.commonName,
-        scientificName: data.species,
-        href: `/inventory/products/species/${data.speciesId}`,
-      },
+      ...(data.relations.species
+        ? [
+            {
+              kind: "parent-species" as const,
+              title: "Parent Species",
+              icon: Leaf,
+              commonName: data.relations.species.common_name || "—",
+              scientificName: data.relations.species.scientific_name || "—",
+              href: `/inventory/products/species/${data.relations.species.id}`,
+            },
+          ]
+        : []),
       {
         kind: "quick-info",
         title: "Quick Info",
         icon: Clock,
         fields: [
-          { label: "Stock ID", value: data.id, mono: true },
-          { label: "Created", value: data.startDate, mono: true },
-          { label: "Assigned To", value: data.assignedTo },
-          { label: "Location", value: data.location },
+          { label: "Stock ID", value: String(data.id), mono: true },
+          { label: "Created", value: formatDate(data.created_at), mono: true },
+          {
+            label: "Last Updated",
+            value: formatDate(data.updated_at),
+            mono: true,
+          },
         ],
       },
     ],
@@ -194,29 +154,14 @@ function assembleConfig(data: BatchDetail): StockPageConfig {
 
 export function useStockDetail(): UseStockDetailResult {
   const { id } = useParams<{ id: string }>();
-  const [data, setData] = useState<BatchDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const numericId = id ? Number(id) : undefined;
+  const safeId = numericId && !isNaN(numericId) ? numericId : undefined;
 
-  useEffect(() => {
-    setLoading(true);
-    setNotFound(false);
-
-    const timer = setTimeout(() => {
-      if (id && batchDetailData[id]) {
-        setData(batchDetailData[id]);
-      } else {
-        setNotFound(true);
-      }
-      setLoading(false);
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [id]);
+  const { data, isLoading, isError } = usePlantStockById(safeId);
 
   const config = useMemo(() => (data ? assembleConfig(data) : null), [data]);
 
-  if (loading) return { state: "loading", id, config: null };
-  if (notFound || !data) return { state: "not-found", id, config: null };
+  if (isLoading) return { state: "loading", id, config: null };
+  if (isError || !data) return { state: "not-found", id, config: null };
   return { state: "ready", id, config };
 }

@@ -36,7 +36,7 @@ export function statusBadgeClass(status: string): string {
 // ─── Action Buttons ──────────────────────────────────────────────────────
 
 export function buildActions(
-  speciesId: string,
+  speciesId: number | null,
   canEdit: boolean = true,
 ): ActionButton[] {
   const actions: ActionButton[] = [];
@@ -51,14 +51,16 @@ export function buildActions(
     });
   }
 
-  actions.push({
-    label: "View Species",
-    icon: Leaf,
-    variant: "default",
-    className: "gap-2 font-medium border",
-    ariaLabel: "View parent species",
-    href: `/inventory/products/species/${speciesId}`,
-  });
+  if (speciesId) {
+    actions.push({
+      label: "View Species",
+      icon: Leaf,
+      variant: "default",
+      className: "gap-2 font-medium border",
+      ariaLabel: "View parent species",
+      href: `/inventory/products/species/${speciesId}`,
+    });
+  }
 
   return actions;
 }

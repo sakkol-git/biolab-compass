@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 // Inventory pages
+import BorrowRecords from "./pages/inventory/BorrowRecords";
 import Chemicals from "./pages/inventory/Chemicals";
 import Dashboard from "./pages/inventory/Dashboard";
 import Equipment from "./pages/inventory/Equipment";
@@ -80,6 +81,10 @@ const App = () => (
             <Route path="/inventory/chemicals" element={<Chemicals />} />
             <Route path="/inventory/equipment" element={<Equipment />} />
             <Route path="/inventory/transactions" element={<Transactions />} />
+            <Route
+              path="/inventory/borrow-records"
+              element={<BorrowRecords />}
+            />
             <Route
               path="/inventory/users"
               element={

@@ -1,80 +1,51 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  * useChemicalsView — All state + logic for the Chemicals listing page.
  *
- * The component file imports this hook and renders pure JSX.
- * No useState, useEffect, or business logic leaks into the view.
+ * Connects to Laravel backend via React Query + chemicalService.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
-import { usePersistedState } from "@/lib/persistence";
 import {
-    checkDuplicate,
-    collectErrors,
-    computeNewQuantity,
-    type FieldErrors,
-    isValid,
-    required,
-    sanitizeForm,
-    throttleSubmit,
-    validateQuantityReduction
-} from "@/lib/validation";
-import type { ChemicalActionType, ChemicalLog } from "@/types/inventory";
+    useChemicalList,
+    useCreateChemical,
+    useDeleteChemical,
+    useUpdateChemical,
+} from "@/hooks/useChemicalQuery";
+import { isValidationError } from "@/types/api-error";
+import type { ChemicalApi, ChemicalPayload } from "@/types/chemical";
+import type { ChemicalCategory, DangerLevel } from "@/types/enums";
+import {
+    CHEMICAL_CATEGORIES,
+    DANGER_LEVELS,
+    formatEnumLabel,
+} from "@/types/enums";
 import type { LucideIcon } from "lucide-react";
-import { Atom, Beaker, Droplets, FlaskConical, TestTubes } from "lucide-react";
+import { Atom, Droplets, FlaskConical } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export interface ChemicalItem {
-  id: string;
-  name: string;
-  cas: string;
-  quantity: string;
-  expiry: string;
-  daysLeft: number;
-  hazard: string;
-  location: string;
+export type ChemicalItem = ChemicalApi & {
   icon: LucideIcon;
   color: string;
-  imageUrl?: string;
-  notes?: string;
-  concentration?: string;
-  molecularWeight?: string;
-  purity?: string;
-  supplier?: string;
-  supplierCatalog?: string;
-  lotNumber?: string;
-  dateReceived?: string;
-  storageTemp?: string;
-  storageConditions?: string;
-  safetyClass?: string;
-  ghs?: string[];
-}
+  daysLeft: number;
+};
 
 export interface ChemicalForm {
   name: string;
-  cas: string;
+  chemicalCode: string;
+  category: string;
   quantity: string;
-  expiry: string;
-  hazard: string;
-  location: string;
-  notes: string;
+  storageLocation: string;
+  expiryDate: string;
+  dangerLevel: string;
+  safetyMeasures: string;
+  description: string;
   imageUrl: string;
-  concentration: string;
-  molecularWeight: string;
-  purity: string;
-  supplier: string;
-  supplierCatalog: string;
-  lotNumber: string;
-  dateReceived: string;
-  storageTemp: string;
-  storageConditions: string;
-  safetyClass: string;
-  ghs: string;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -88,131 +59,23 @@ export const HAZARD_ICONS: Record<string, { icon: LucideIcon; color: string }> =
 
 const EMPTY_FORM: ChemicalForm = {
   name: "",
-  cas: "",
+  chemicalCode: "",
+  category: "other",
   quantity: "",
-  expiry: "",
-  hazard: "low",
-  location: "",
-  notes: "",
+  storageLocation: "",
+  expiryDate: "",
+  dangerLevel: "low",
+  safetyMeasures: "",
+  description: "",
   imageUrl: "",
-  concentration: "",
-  molecularWeight: "",
-  purity: "",
-  supplier: "",
-  supplierCatalog: "",
-  lotNumber: "",
-  dateReceived: "",
-  storageTemp: "",
-  storageConditions: "",
-  safetyClass: "",
-  ghs: "",
 };
 
-const SEED_DATA: ChemicalItem[] = [
-  {
-    id: "CH-001",
-    name: "Sodium Hydroxide (NaOH)",
-    cas: "1310-73-2",
-    quantity: "2.5L",
-    expiry: "2026-02-12",
-    daysLeft: 7,
-    hazard: "high",
-    location: "Cabinet A-1",
-    icon: Beaker as LucideIcon,
-    color: "hsl(0, 72%, 51%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=600&h=400&fit=crop",
-  },
-  {
-    id: "CH-002",
-    name: "Hydrochloric Acid (HCl)",
-    cas: "7647-01-0",
-    quantity: "1L",
-    expiry: "2026-02-18",
-    daysLeft: 13,
-    hazard: "high",
-    location: "Acid Storage",
-    icon: Droplets as LucideIcon,
-    color: "hsl(38, 92%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&h=400&fit=crop",
-  },
-  {
-    id: "CH-003",
-    name: "Ethanol 95%",
-    cas: "64-17-5",
-    quantity: "5L",
-    expiry: "2026-02-25",
-    daysLeft: 20,
-    hazard: "medium",
-    location: "Flammable Cabinet",
-    icon: FlaskConical as LucideIcon,
-    color: "hsl(210, 60%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1616711020004-4a85c872f1ee?w=600&h=400&fit=crop",
-  },
-  {
-    id: "CH-004",
-    name: "Agar Powder",
-    cas: "9002-18-0",
-    quantity: "500g",
-    expiry: "2026-12-15",
-    daysLeft: 313,
-    hazard: "low",
-    location: "Dry Storage",
-    icon: TestTubes as LucideIcon,
-    color: "hsl(145, 63%, 32%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=600&h=400&fit=crop",
-  },
-  {
-    id: "CH-005",
-    name: "Murashige-Skoog Medium",
-    cas: "N/A",
-    quantity: "1kg",
-    expiry: "2026-08-30",
-    daysLeft: 206,
-    hazard: "low",
-    location: "Cold Room",
-    icon: Atom as LucideIcon,
-    color: "hsl(175, 65%, 35%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1578496781985-452d4a934d50?w=600&h=400&fit=crop",
-  },
-  {
-    id: "CH-006",
-    name: "Phosphoric Acid",
-    cas: "7664-38-2",
-    quantity: "500mL",
-    expiry: "2026-01-05",
-    daysLeft: -31,
-    hazard: "high",
-    location: "Acid Storage",
-    icon: Droplets as LucideIcon,
-    color: "hsl(0, 72%, 51%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=600&h=400&fit=crop",
-  },
-  {
-    id: "CH-007",
-    name: "Potassium Nitrate",
-    cas: "7757-79-1",
-    quantity: "2kg",
-    expiry: "2026-10-20",
-    daysLeft: 257,
-    hazard: "medium",
-    location: "Chemical Store",
-    icon: Atom as LucideIcon,
-    color: "hsl(270, 50%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1585435557343-3b092031a831?w=600&h=400&fit=crop",
-  },
-];
+export { CHEMICAL_CATEGORIES, DANGER_LEVELS, formatEnumLabel };
 
 // ─── Helpers (exported for sub-components) ─────────────────────────────────
 
-export const hazardBackground = (hazard: string): string => {
-  switch (hazard) {
+export const hazardBackground = (danger: string): string => {
+  switch (danger) {
     case "high":
       return "bg-destructive/5 border-destructive/20";
     case "medium":
@@ -224,8 +87,8 @@ export const hazardBackground = (hazard: string): string => {
   }
 };
 
-export const hazardBadge = (hazard: string): string => {
-  switch (hazard) {
+export const hazardBadge = (danger: string): string => {
+  switch (danger) {
     case "high":
       return "bg-destructive text-destructive-foreground";
     case "medium":
@@ -236,6 +99,12 @@ export const hazardBadge = (hazard: string): string => {
       return "bg-muted text-muted-foreground";
   }
 };
+
+function computeDaysLeft(expiryDate: string | null): number {
+  if (!expiryDate) return 999; // no expiry = safe
+  const diff = new Date(expiryDate).getTime() - Date.now();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
 
 export const expiryStatus = (daysLeft: number) => {
   if (daysLeft < 0)
@@ -256,8 +125,8 @@ export const expiryStatus = (daysLeft: number) => {
   return { label: "OK", className: "bg-muted text-primary" };
 };
 
-export const formatDisplayDate = (iso: string) => {
-  if (!iso) return "";
+export const formatDisplayDate = (iso: string | null) => {
+  if (!iso) return "—";
   const d = new Date(iso);
   return d.toLocaleDateString("en-US", {
     month: "short",
@@ -266,54 +135,120 @@ export const formatDisplayDate = (iso: string) => {
   });
 };
 
+function toChemicalItem(c: ChemicalApi): ChemicalItem {
+  const meta = HAZARD_ICONS[c.danger_level] || HAZARD_ICONS.low;
+  return {
+    ...c,
+    icon: meta.icon,
+    color: meta.color,
+    daysLeft: computeDaysLeft(c.expiry_date),
+  };
+}
+
+function formToPayload(form: ChemicalForm): ChemicalPayload {
+  return {
+    common_name: form.name,
+    chemical_code: form.chemicalCode || null,
+    category: form.category as ChemicalCategory,
+    quantity: Number(form.quantity) || 0,
+    storage_location: form.storageLocation || null,
+    expiry_date: form.expiryDate || null,
+    danger_level: form.dangerLevel as DangerLevel,
+    safety_measures: form.safetyMeasures || null,
+    description: form.description || null,
+    image_url: form.imageUrl || null,
+  };
+}
+
+function chemicalToForm(item: ChemicalApi): ChemicalForm {
+  return {
+    name: item.common_name,
+    chemicalCode: item.chemical_code || "",
+    category: item.category,
+    quantity: String(item.quantity),
+    storageLocation: item.storage_location || "",
+    expiryDate: item.expiry_date || "",
+    dangerLevel: item.danger_level,
+    safetyMeasures: item.safety_measures || "",
+    description: item.description || "",
+    imageUrl: item.image_url || "",
+  };
+}
+
+// ─── Backend Error Field Map ────────────────────────────────────────────────
+
+const BACKEND_FIELD_MAP: Record<string, keyof ChemicalForm> = {
+  common_name: "name",
+  chemical_code: "chemicalCode",
+  category: "category",
+  quantity: "quantity",
+  storage_location: "storageLocation",
+  expiry_date: "expiryDate",
+  danger_level: "dangerLevel",
+  safety_measures: "safetyMeasures",
+  description: "description",
+  image_url: "imageUrl",
+};
+
+type FormErrors = Partial<Record<keyof ChemicalForm, string>>;
+
+function mapBackendErrors(errors: Record<string, string[]>): FormErrors {
+  const mapped: FormErrors = {};
+  for (const [key, msgs] of Object.entries(errors)) {
+    const field = BACKEND_FIELD_MAP[key];
+    if (field) mapped[field] = msgs[0];
+  }
+  return mapped;
+}
+
 // ─── Hook ──────────────────────────────────────────────────────────────────
 
 export function useChemicalsView() {
   const navigate = useNavigate();
-  const [items, setItems] = usePersistedState<ChemicalItem[]>(
-    "chemicals",
-    SEED_DATA,
-  );
+
+  // ── Data from backend (paginated) ──
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const queryParams: Record<string, unknown> = { page };
+  if (searchQuery) queryParams.search = searchQuery;
+
+  const { data: response, isLoading, isError } = useChemicalList(queryParams);
+
+  const rawItems = response?.data ?? [];
+  const meta = response?.meta;
+  const items: ChemicalItem[] = rawItems
+    .map(toChemicalItem)
+    .sort((a, b) => a.id - b.id);
+
+  // ── Mutations ──
+  const createMutation = useCreateChemical();
+  const updateMutation = useUpdateChemical();
+  const deleteMutation = useDeleteChemical();
+
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ChemicalItem | null>(null);
   const [form, setForm] = useState<ChemicalForm>(EMPTY_FORM);
-  const [formErrors, setFormErrors] = useState<FieldErrors<keyof ChemicalForm>>(
-    {},
-  );
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   // ── Delete confirmation ──
   const deleteDialog = useConfirmDialog();
 
-  // ── Quantity Adjustment state ──
-  const [adjustOpen, setAdjustOpen] = useState(false);
-  const [adjustItem, setAdjustItem] = useState<ChemicalItem | null>(null);
-  const [adjustAction, setAdjustAction] = useState<ChemicalActionType>("add");
-  const [adjustAmount, setAdjustAmount] = useState("");
-  const [adjustUnit, setAdjustUnit] = useState("");
-  const [adjustReason, setAdjustReason] = useState("");
-  const [adjustError, setAdjustError] = useState<string | undefined>();
-  const [chemicalLogs, setChemicalLogs] = usePersistedState<ChemicalLog[]>(
-    "chemical_logs",
-    [],
-  );
-
   // ── Derived state ──
-  const filteredItems = items.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.cas.includes(searchQuery) ||
-      c.id.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const filteredItems = items; // Server-side filtering
 
-  const expiredCount = items.filter((c) => c.daysLeft < 0).length;
+  const expiredCount = items.filter((c) => c.is_expired).length;
   const expiringSoonCount = items.filter(
-    (c) => c.daysLeft > 0 && c.daysLeft <= 14,
+    (c) => !c.is_expired && c.daysLeft > 0 && c.daysLeft <= 14,
   ).length;
 
   const quickStats: Stat[] = [
-    { label: "Total Chemicals", value: items.length, color: "primary" },
+    {
+      label: "Total Chemicals",
+      value: meta?.total ?? items.length,
+      color: "primary",
+    },
     { label: "Expired", value: expiredCount, color: "destructive" },
     { label: "Expiring (14d)", value: expiringSoonCount, color: "warning" },
     {
@@ -326,15 +261,13 @@ export function useChemicalsView() {
   const isEditing = editingItem !== null;
   const formTitle = isEditing ? "Edit Chemical" : "Add New Chemical";
   const formDescription = isEditing
-    ? `Update details for ${editingItem!.name}.`
+    ? `Update details for ${editingItem!.common_name}.`
     : "Fill in the details to register a new chemical.";
 
-  const canSubmitForm = Boolean(
-    form.name && form.quantity && form.expiry && form.location,
-  );
+  const canSubmitForm = Boolean(form.name && form.quantity);
 
   // ── Actions ──
-  const navigateToDetail = (id: string) =>
+  const navigateToDetail = (id: number) =>
     navigate(`/inventory/products/chemicals/${id}`);
   const updateSearchQuery = (q: string) => setSearchQuery(q);
   const switchViewMode = (mode: ViewMode) => setViewMode(mode);
@@ -342,6 +275,7 @@ export function useChemicalsView() {
   const openCreateForm = () => {
     setEditingItem(null);
     setForm(EMPTY_FORM);
+    setFormErrors({});
     setFormOpen(true);
   };
   const closeForm = () => {
@@ -351,27 +285,8 @@ export function useChemicalsView() {
 
   const openEditForm = (chem: ChemicalItem) => {
     setEditingItem(chem);
-    setForm({
-      name: chem.name,
-      cas: chem.cas,
-      quantity: chem.quantity,
-      expiry: chem.expiry,
-      hazard: chem.hazard,
-      location: chem.location,
-      notes: chem.notes || "",
-      imageUrl: chem.imageUrl || "",
-      concentration: chem.concentration || "",
-      molecularWeight: chem.molecularWeight || "",
-      purity: chem.purity || "",
-      supplier: chem.supplier || "",
-      supplierCatalog: chem.supplierCatalog || "",
-      lotNumber: chem.lotNumber || "",
-      dateReceived: chem.dateReceived || "",
-      storageTemp: chem.storageTemp || "",
-      storageConditions: chem.storageConditions || "",
-      safetyClass: chem.safetyClass || "",
-      ghs: chem.ghs ? chem.ghs.join(", ") : "",
-    });
+    setForm(chemicalToForm(chem));
+    setFormErrors({});
     setFormOpen(true);
   };
 
@@ -383,239 +298,86 @@ export function useChemicalsView() {
   };
 
   const submitChemicalForm = () => {
-    // ── Throttle guard ──
-    const throttleErr = throttleSubmit("chemical_form", 1000);
-    if (throttleErr) {
-      toast.error(throttleErr);
-      return;
-    }
-
-    // ── Sanitize ──
-    const clean = sanitizeForm(form);
-
-    // ── Validate ──
-    const errors = collectErrors<keyof ChemicalForm>({
-      name: required(clean.name, "Chemical name"),
-      quantity: required(clean.quantity, "Quantity"),
-      expiry: required(clean.expiry, "Expiry date"),
-      location: required(clean.location, "Storage location"),
-      cas: checkDuplicate(items, "cas", clean.cas, editingItem?.id),
-      // remaining fields optional — no error
-      hazard: undefined,
-      notes: undefined,
-      imageUrl: undefined,
-      concentration: undefined,
-      molecularWeight: undefined,
-      purity: undefined,
-      supplier: undefined,
-      supplierCatalog: undefined,
-      lotNumber: undefined,
-      dateReceived: undefined,
-      storageTemp: undefined,
-      storageConditions: undefined,
-      safetyClass: undefined,
-      ghs: undefined,
-    });
-
-    if (!isValid(errors)) {
-      setFormErrors(errors);
-      toast.error("Please fix the highlighted errors");
+    if (!form.name || !form.quantity) {
+      toast.error("Please fill in all required fields");
       return;
     }
     setFormErrors({});
 
-    const today = new Date();
-    const expiryDate = new Date(clean.expiry);
-    const daysLeft = Math.ceil(
-      (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    const hInfo = HAZARD_ICONS[clean.hazard] || HAZARD_ICONS.low;
-    const parsedGhs = clean.ghs
-      ? clean.ghs
-          .split(",")
-          .map((g) => g.trim())
-          .filter(Boolean)
-      : [];
+    const payload = formToPayload(form);
 
     if (editingItem) {
-      setItems((prev) =>
-        prev.map((c) =>
-          c.id === editingItem.id
-            ? {
-                ...c,
-                name: clean.name,
-                cas: clean.cas,
-                quantity: clean.quantity,
-                expiry: clean.expiry,
-                daysLeft,
-                hazard: clean.hazard,
-                location: clean.location,
-                notes: clean.notes || undefined,
-                icon: hInfo.icon,
-                color: hInfo.color,
-                imageUrl: clean.imageUrl || undefined,
-                concentration: clean.concentration || undefined,
-                molecularWeight: clean.molecularWeight || undefined,
-                purity: clean.purity || undefined,
-                supplier: clean.supplier || undefined,
-                supplierCatalog: clean.supplierCatalog || undefined,
-                lotNumber: clean.lotNumber || undefined,
-                dateReceived: clean.dateReceived || undefined,
-                storageTemp: clean.storageTemp || undefined,
-                storageConditions: clean.storageConditions || undefined,
-                safetyClass: clean.safetyClass || undefined,
-                ghs: parsedGhs.length > 0 ? parsedGhs : undefined,
-              }
-            : c,
-        ),
+      updateMutation.mutate(
+        { id: editingItem.id, payload },
+        {
+          onSuccess: () => {
+            setFormOpen(false);
+            setForm(EMPTY_FORM);
+            setEditingItem(null);
+            toast.success(`${form.name} updated successfully`);
+          },
+          onError: (err) => {
+            if (isValidationError(err)) {
+              setFormErrors(mapBackendErrors(err.response.data.errors));
+            }
+            toast.error(
+              isValidationError(err)
+                ? err.response.data.message
+                : "Failed to update chemical",
+            );
+          },
+        },
       );
     } else {
-      const newId = `CH-${String(items.length + 1).padStart(3, "0")}`;
-      const newItem: ChemicalItem = {
-        id: newId,
-        name: clean.name,
-        cas: clean.cas,
-        quantity: clean.quantity,
-        expiry: clean.expiry,
-        daysLeft,
-        hazard: clean.hazard,
-        location: clean.location,
-        notes: clean.notes || undefined,
-        icon: hInfo.icon,
-        color: hInfo.color,
-        imageUrl: clean.imageUrl || undefined,
-        concentration: clean.concentration || undefined,
-        molecularWeight: clean.molecularWeight || undefined,
-        purity: clean.purity || undefined,
-        supplier: clean.supplier || undefined,
-        supplierCatalog: clean.supplierCatalog || undefined,
-        lotNumber: clean.lotNumber || undefined,
-        dateReceived: clean.dateReceived || undefined,
-        storageTemp: clean.storageTemp || undefined,
-        storageConditions: clean.storageConditions || undefined,
-        safetyClass: clean.safetyClass || undefined,
-        ghs: parsedGhs.length > 0 ? parsedGhs : undefined,
-      };
-      setItems((prev) => [...prev, newItem]);
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          setFormOpen(false);
+          setForm(EMPTY_FORM);
+          setEditingItem(null);
+          toast.success(`${form.name} added successfully`);
+        },
+        onError: (err) => {
+          if (isValidationError(err)) {
+            setFormErrors(mapBackendErrors(err.response.data.errors));
+          }
+          toast.error(
+            isValidationError(err)
+              ? err.response.data.message
+              : "Failed to create chemical",
+          );
+        },
+      });
     }
-
-    setFormOpen(false);
-    setForm(EMPTY_FORM);
-    toast.success(
-      isEditing
-        ? `${clean.name} updated successfully`
-        : `${clean.name} added successfully`,
-    );
-    setEditingItem(null);
   };
 
-  // ── Quantity Adjustment Actions ──
-  const openAdjustDialog = (chem: ChemicalItem, action: ChemicalActionType) => {
-    setAdjustItem(chem);
-    setAdjustAction(action);
-    setAdjustAmount("");
-    setAdjustUnit("");
-    setAdjustReason("");
-    setAdjustOpen(true);
-  };
-
-  const closeAdjustDialog = () => {
-    setAdjustOpen(false);
-    setAdjustItem(null);
-  };
-
-  const canSubmitAdjust = Boolean(
-    adjustItem && adjustAmount && parseFloat(adjustAmount) > 0 && adjustUnit,
-  );
-
-  const submitQuantityAdjustment = () => {
-    if (!adjustItem || !canSubmitAdjust) return;
-
-    const amt = parseFloat(adjustAmount);
-
-    // ── Validate reduction won't go negative (BL-001) ──
-    if (adjustAction === "reduce") {
-      const reductionErr = validateQuantityReduction(adjustItem.quantity, amt);
-      if (reductionErr) {
-        setAdjustError(reductionErr);
-        toast.error(reductionErr);
-        return;
-      }
-    }
-    setAdjustError(undefined);
-
-    const previousQuantity = adjustItem.quantity;
-    const newQuantity = computeNewQuantity(
-      adjustItem.quantity,
-      amt,
-      adjustUnit,
-      adjustAction === "add" ? "add" : "reduce",
-    );
-
-    // Update the item's quantity
-    setItems((prev) =>
-      prev.map((c) =>
-        c.id === adjustItem.id ? { ...c, quantity: newQuantity } : c,
-      ),
-    );
-
-    // Create a log entry
-    const newLog: ChemicalLog = {
-      id: `CL-${String(chemicalLogs.length + 1).padStart(3, "0")}`,
-      chemicalId: adjustItem.id,
-      actionType: adjustAction,
-      amount: amt,
-      unit: adjustUnit,
-      previousQuantity,
-      newQuantity,
-      reason: adjustReason || undefined,
-      userName: "Current User",
-      createdAt: new Date().toISOString(),
-    };
-
-    setChemicalLogs((prev) => [newLog, ...prev]);
-    setAdjustOpen(false);
-    setAdjustItem(null);
-
-    const verb = adjustAction === "add" ? "increased" : "reduced";
-    toast.success(
-      `Quantity ${verb} for ${adjustItem.name}: ${previousQuantity} → ${newQuantity}`,
-    );
-  };
-
-  // ── Delete Chemical (with confirmation via useConfirmDialog) ──
+  // ── Delete ──
   const requestDeleteChemical = (chem: ChemicalItem) => {
-    deleteDialog.requestConfirm(chem.id, {
-      title: `Delete ${chem.name}?`,
-      description: `This will permanently remove ${chem.name} (${chem.id}) and cannot be undone.`,
+    deleteDialog.requestConfirm(String(chem.id), {
+      title: `Delete ${chem.common_name}?`,
+      description: `This will permanently remove ${chem.common_name} (#${chem.id}).`,
     });
   };
 
   const confirmDeleteChemical = () => {
     deleteDialog.confirm((id) => {
-      setItems((prev) => prev.filter((c) => c.id !== id));
-      toast.success("Chemical deleted");
+      deleteMutation.mutate(Number(id), {
+        onSuccess: () => toast.success("Chemical deleted"),
+        onError: () => toast.error("Failed to delete chemical"),
+      });
     });
   };
 
-  return {
-    // Data
-    filteredItems,
-    totalCount: items.length,
-    quickStats,
-    expiredCount,
-    expiringSoonCount,
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
-    // Search & View
+  return {
+    filteredItems,
+    totalCount: meta?.total ?? items.length,
+    quickStats,
     searchQuery,
     updateSearchQuery,
     viewMode,
     switchViewMode,
-
-    // Navigation
     navigateToDetail,
-
-    // Form
     formOpen,
     isEditing,
     formTitle,
@@ -628,27 +390,17 @@ export function useChemicalsView() {
     closeForm,
     updateFormField,
     submitChemicalForm,
-
+    expiredCount,
+    expiringSoonCount,
     // Delete
     deleteDialog,
     requestDeleteChemical,
     confirmDeleteChemical,
-
-    // Quantity Adjustment
-    adjustOpen,
-    adjustItem,
-    adjustAction,
-    adjustAmount,
-    adjustUnit,
-    adjustReason,
-    adjustError,
-    canSubmitAdjust,
-    openAdjustDialog,
-    closeAdjustDialog,
-    setAdjustAmount,
-    setAdjustUnit,
-    setAdjustReason,
-    submitQuantityAdjustment,
-    chemicalLogs,
+    isLoading,
+    isError,
+    isSubmitting,
+    page,
+    setPage,
+    meta,
   };
 }

@@ -1,78 +1,54 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  * usePlantVarietiesView — State + logic for the Plant Varieties page.
+ *
+ * Connects to Laravel backend via React Query + plantVarietyService.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
-import { speciesDetailData } from "@/data/mockDetailData";
-import { plantVarietiesData } from "@/data/mockInventoryData";
-import { usePersistedState } from "@/lib/persistence";
+import { usePlantSpeciesList } from "@/hooks/usePlantSpeciesQuery";
 import {
-    collectErrors,
-    type FieldErrors,
-    isValid,
-    required,
-    sanitizeForm,
-    throttleSubmit,
-    validateForeignKey,
-} from "@/lib/validation";
+    useCreatePlantVariety,
+    useDeletePlantVariety,
+    usePlantVarietyList,
+    useUpdatePlantVariety,
+} from "@/hooks/usePlantVarietyQuery";
+import { isValidationError } from "@/types/api-error";
+import type {
+    PlantVarietyApi,
+    PlantVarietyPayload,
+} from "@/types/plant-variety";
 import type { LucideIcon } from "lucide-react";
 import { Leaf } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export interface VarietyItem {
-  id: string;
-  varietyCode: string;
-  speciesId: string;
-  speciesName: string;
-  name: string;
-  uniqueCode: string;
-  ownershipUserName?: string;
-  ownershipDepartment?: string;
-  originLocation: string;
-  description?: string;
-  dateBrought?: string;
-  status: string;
+export type VarietyItem = PlantVarietyApi & {
   icon: LucideIcon;
   color: string;
-  images?: string[];
-  // Hierarchical fields
-  sampleCount: number;
-  totalQuantity: number;
-  availableQuantity: number;
-  quantityUnit: string;
-}
+};
 
 export interface VarietyForm {
   name: string;
-  speciesId: string;
-  uniqueCode: string;
-  ownershipUserName: string;
-  ownershipDepartment: string;
-  originLocation: string;
+  speciesId: string; // string for Select component, converted to number for API
+  varietyCode: string;
   description: string;
-  dateBrought: string;
-  status: string;
-  notes: string;
+  imageUrl: string;
 }
 
 const EMPTY_FORM: VarietyForm = {
   name: "",
   speciesId: "",
-  uniqueCode: "",
-  ownershipUserName: "",
-  ownershipDepartment: "",
-  originLocation: "",
+  varietyCode: "",
   description: "",
-  dateBrought: "",
-  status: "Active",
-  notes: "",
+  imageUrl: "",
 };
+
+// ─── Constants ─────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
   Active:
@@ -83,209 +59,199 @@ const STATUS_COLORS: Record<string, string> = {
 
 export { STATUS_COLORS };
 
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function toVarietyItem(v: PlantVarietyApi): VarietyItem {
+  return { ...v, icon: Leaf, color: "text-emerald-600" };
+}
+
+function formToPayload(form: VarietyForm): PlantVarietyPayload {
+  return {
+    plant_specy_id: Number(form.speciesId),
+    name: form.name,
+    variety_code: form.varietyCode,
+    description: form.description || null,
+    image_url: form.imageUrl || null,
+  };
+}
+
+function varietyToForm(item: PlantVarietyApi): VarietyForm {
+  return {
+    name: item.name,
+    speciesId: String(item.plant_specy_id),
+    varietyCode: item.variety_code,
+    description: item.description || "",
+    imageUrl: item.image_url || "",
+  };
+}
+
+// ─── Backend Error Field Map ────────────────────────────────────────────────
+
+const BACKEND_FIELD_MAP: Record<string, keyof VarietyForm> = {
+  plant_specy_id: "speciesId",
+  name: "name",
+  variety_code: "varietyCode",
+  description: "description",
+  image_url: "imageUrl",
+};
+
+type FormErrors = Partial<Record<keyof VarietyForm, string>>;
+
+function mapBackendErrors(errors: Record<string, string[]>): FormErrors {
+  const mapped: FormErrors = {};
+  for (const [key, msgs] of Object.entries(errors)) {
+    const field = BACKEND_FIELD_MAP[key];
+    if (field) mapped[field] = msgs[0];
+  }
+  return mapped;
+}
+
 // ─── Hook ──────────────────────────────────────────────────────────────────
 
 export function usePlantVarietiesView() {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
+  // ── Data from backend (paginated) ──
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+
+  const queryParams: Record<string, unknown> = { page };
+  if (searchQuery) queryParams.search = searchQuery;
+
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = usePlantVarietyList(queryParams);
+
+  const rawItems = response?.data ?? [];
+  const meta = response?.meta;
+  // sort by id to maintain stable order regardless of backend's sort key
+  const items: VarietyItem[] = rawItems
+    .map(toVarietyItem)
+    .sort((a, b) => a.id - b.id);
+
+  // ── Species list for dropdown ──
+  const { data: speciesResponse } = usePlantSpeciesList({ per_page: 100 });
+  const species = speciesResponse?.data ?? [];
+
+  // ── Mutations ──
+  const createMutation = useCreatePlantVariety();
+  const updateMutation = useUpdatePlantVariety();
+  const deleteMutation = useDeletePlantVariety();
+
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<VarietyForm>(EMPTY_FORM);
-  const [formErrors, setFormErrors] = useState<FieldErrors<keyof VarietyForm>>(
-    {},
-  );
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   // ── Delete confirmation ──
   const deleteDialog = useConfirmDialog();
 
-  const [items, setItems] = usePersistedState<VarietyItem[]>(
-    "plant_varieties",
-    plantVarietiesData.map((v) => ({
-      id: v.id,
-      varietyCode: v.varietyCode,
-      speciesId: v.speciesId,
-      speciesName: v.speciesName || "",
-      name: v.name,
-      uniqueCode: v.varietyCode,
-      ownershipUserName: v.ownershipUserName,
-      ownershipDepartment: v.ownershipDepartment,
-      originLocation: v.originLocation || "",
-      description: v.description,
-      dateBrought: v.dateBrought,
-      status: v.status,
-      icon: Leaf,
-      color: "text-emerald-600",
-      images: v.images,
-      sampleCount: v.sampleCount || 0,
-      totalQuantity: v.totalQuantity || 0,
-      availableQuantity: v.availableQuantity || 0,
-      quantityUnit: v.quantityUnit || "units",
-    })),
-  );
-
-  const species = Object.values(speciesDetailData);
-
-  const filteredItems = useMemo(() => {
-    let result = items;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (i) =>
-          i.name.toLowerCase().includes(q) ||
-          i.uniqueCode.toLowerCase().includes(q) ||
-          i.speciesName.toLowerCase().includes(q) ||
-          (i.ownershipUserName?.toLowerCase() ?? "").includes(q) ||
-          i.originLocation.toLowerCase().includes(q),
-      );
-    }
-    if (statusFilter !== "all") {
-      result = result.filter((i) => i.status === statusFilter);
-    }
-    return result;
-  }, [items, searchQuery, statusFilter]);
+  // ── Derived ──
+  const filteredItems = items; // Server-side filtering via queryParams
 
   const stats: Stat[] = [
-    { label: "Total Varieties", value: items.length, color: "primary" },
     {
-      label: "Active",
-      value: items.filter((i) => i.status === "Active").length,
+      label: "Total Varieties",
+      value: meta?.total ?? items.length,
       color: "primary",
     },
-    {
-      label: "Archived",
-      value: items.filter((i) => i.status === "Archived").length,
-      color: "warning",
-    },
-    {
-      label: "Destroyed",
-      value: items.filter((i) => i.status === "Destroyed").length,
-      color: "destructive",
-    },
+    { label: "On Page", value: items.length, color: "primary" },
   ];
 
+  // ── Actions ──
   const openCreateForm = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setFormErrors({});
     setDialogOpen(true);
   };
 
   const openEditForm = (item: VarietyItem) => {
     setEditingId(item.id);
-    setForm({
-      name: item.name,
-      speciesId: item.speciesId,
-      uniqueCode: item.uniqueCode,
-      ownershipUserName: item.ownershipUserName ?? "",
-      ownershipDepartment: item.ownershipDepartment ?? "",
-      originLocation: item.originLocation,
-      description: item.description ?? "",
-      dateBrought: item.dateBrought ?? "",
-      status: item.status,
-      notes: "",
-    });
+    setForm(varietyToForm(item));
+    setFormErrors({});
     setDialogOpen(true);
   };
 
   const handleSave = () => {
-    // ── Throttle guard ──
-    const throttleErr = throttleSubmit("variety_form", 1000);
-    if (throttleErr) {
-      toast.error(throttleErr);
-      return;
-    }
-
-    const clean = sanitizeForm(form);
-
-    // ── Validate ──
-    const errors = collectErrors<keyof VarietyForm>({
-      name: required(clean.name, "Variety name"),
-      speciesId: validateForeignKey(species, clean.speciesId, "Species"),
-      originLocation: required(clean.originLocation, "Origin location"),
-      uniqueCode: undefined,
-      ownershipUserName: undefined,
-      ownershipDepartment: undefined,
-      description: undefined,
-      dateBrought: undefined,
-      status: undefined,
-      notes: undefined,
-    });
-    if (!isValid(errors)) {
-      setFormErrors(errors);
-      toast.error("Please fix the highlighted errors");
+    if (!form.name || !form.speciesId) {
+      toast.error("Please fill in all required fields");
       return;
     }
     setFormErrors({});
 
-    const matchedSpecies = species.find((s) => s.id === clean.speciesId);
+    const payload = formToPayload(form);
+
     if (editingId) {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                ...clean,
-                speciesName: matchedSpecies?.scientificName ?? item.speciesName,
-              }
-            : item,
-        ),
-      );
-      toast.success(`Variety "${clean.name}" updated successfully`);
-    } else {
-      const newId = `PV-${String(items.length + 1).padStart(3, "0")}`;
-      setItems((prev) => [
-        ...prev,
+      updateMutation.mutate(
+        { id: editingId, payload },
         {
-          id: newId,
-          varietyCode: newId,
-          speciesId: clean.speciesId,
-          speciesName: matchedSpecies?.scientificName ?? "",
-          name: clean.name,
-          uniqueCode:
-            clean.uniqueCode ||
-            `PS-VAR-${String(items.length + 1).padStart(4, "0")}`,
-          ownershipUserName: clean.ownershipUserName,
-          ownershipDepartment: clean.ownershipDepartment,
-          originLocation: clean.originLocation,
-          description: clean.description,
-          dateBrought: clean.dateBrought,
-          status: clean.status,
-          icon: Leaf,
-          color: "text-emerald-600",
-          images: [],
-          sampleCount: 0,
-          totalQuantity: 0,
-          availableQuantity: 0,
-          quantityUnit: "units",
+          onSuccess: () => {
+            setDialogOpen(false);
+            setForm(EMPTY_FORM);
+            setEditingId(null);
+            toast.success(`Variety "${form.name}" updated successfully`);
+          },
+          onError: (err) => {
+            if (isValidationError(err)) {
+              setFormErrors(mapBackendErrors(err.response.data.errors));
+            }
+            toast.error(
+              isValidationError(err)
+                ? err.response.data.message
+                : "Failed to update variety",
+            );
+          },
         },
-      ]);
-      toast.success(`Variety "${clean.name}" added successfully`);
+      );
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          setDialogOpen(false);
+          setForm(EMPTY_FORM);
+          setEditingId(null);
+          toast.success(`Variety "${form.name}" added successfully`);
+        },
+        onError: (err) => {
+          if (isValidationError(err)) {
+            setFormErrors(mapBackendErrors(err.response.data.errors));
+          }
+          toast.error(
+            isValidationError(err)
+              ? err.response.data.message
+              : "Failed to create variety",
+          );
+        },
+      });
     }
-    setDialogOpen(false);
   };
 
   const requestDeleteVariety = (item: VarietyItem) => {
-    deleteDialog.requestConfirm(item.id, {
+    deleteDialog.requestConfirm(String(item.id), {
       title: `Delete ${item.name}?`,
-      description: `This will permanently remove variety ${item.name} (${item.id}).`,
+      description: `This will permanently remove variety ${item.name} (#${item.id}).`,
     });
   };
 
   const confirmDeleteVariety = () => {
     deleteDialog.confirm((id) => {
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      toast.success("Variety deleted");
+      deleteMutation.mutate(Number(id), {
+        onSuccess: () => toast.success("Variety deleted"),
+        onError: () => toast.error("Failed to delete variety"),
+      });
     });
   };
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return {
     viewMode,
     setViewMode,
     searchQuery,
     setSearchQuery,
-    statusFilter,
-    setStatusFilter,
     dialogOpen,
     setDialogOpen,
     editingId,
@@ -303,5 +269,11 @@ export function usePlantVarietiesView() {
     requestDeleteVariety,
     confirmDeleteVariety,
     navigate,
+    isLoading,
+    isError,
+    isSubmitting,
+    page,
+    setPage,
+    meta,
   } as const;
 }

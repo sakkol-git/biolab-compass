@@ -42,8 +42,8 @@ export function statusBadgeClass(status: string): string {
 // ─── Action Buttons ──────────────────────────────────────────────────────
 
 export function buildActions(
-  speciesId: string,
-  varietyId?: string,
+  speciesId: number | null,
+  varietyId?: number | null,
 ): ActionButton[] {
   const actions: ActionButton[] = [
     {
@@ -53,15 +53,18 @@ export function buildActions(
       className: "gap-2 border font-medium",
       ariaLabel: "Edit sample entry",
     },
-    {
+  ];
+
+  if (speciesId) {
+    actions.push({
       label: "View Species",
       icon: Leaf,
       variant: "default",
       className: "gap-2 font-medium border",
       ariaLabel: "View parent species",
       href: `/inventory/products/species/${speciesId}`,
-    },
-  ];
+    });
+  }
 
   if (varietyId) {
     actions.push({

@@ -9,6 +9,8 @@
 // data structure consumed by the rendering engine.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { useDashboardData } from "@/hooks/useDashboardQuery";
+import type { DashboardData } from "@/services/dashboardService";
 import {
     ArrowLeftRight,
     BarChart3,
@@ -32,35 +34,77 @@ function buildDateLabel(): string {
   });
 }
 
-function buildKpiStats(): KpiStat[] {
+function buildKpiStats(data: DashboardData | undefined): KpiStat[] {
+  if (!data) {
+    return [
+      {
+        title: "Plant Species",
+        value: "—",
+        subtitle: "Loading…",
+        icon: <Leaf className="h-5 w-5 text-primary" />,
+      },
+      {
+        title: "Chemical Stocks",
+        value: "—",
+        subtitle: "Loading…",
+        icon: <FlaskConical className="h-5 w-5 text-primary" />,
+      },
+      {
+        title: "Equipment Units",
+        value: "—",
+        subtitle: "Loading…",
+        icon: <Wrench className="h-5 w-5 text-primary" />,
+      },
+      {
+        title: "Overdue Borrows",
+        value: "—",
+        subtitle: "Loading…",
+        icon: <ArrowLeftRight className="h-5 w-5 text-primary" />,
+      },
+    ];
+  }
+
+  const availableEquipment = data.equipment_by_status?.available ?? 0;
+  const expiringSoon = data.chemicals_expiring_soon ?? 0;
+
   return [
     {
-      title: "Plant Stock",
-      value: "1,247",
-      subtitle: "Across 7 species",
+      title: "Plant Species",
+      value: String(data.plant_species_count),
+      subtitle: `${data.plant_samples_count} samples tracked`,
       icon: <Leaf className="h-5 w-5 text-primary" />,
-      trend: { value: 12, label: "this month", positive: true },
     },
     {
       title: "Chemical Stocks",
-      value: "156",
-      subtitle: "3 near expiry",
+      value: String(data.chemicals_count),
+      subtitle:
+        expiringSoon > 0 ? `${expiringSoon} near expiry` : "All in date",
       icon: <FlaskConical className="h-5 w-5 text-primary" />,
-      trend: { value: 2, label: "expiring soon", positive: false },
+      trend:
+        data.chemicals_expired > 0
+          ? { value: data.chemicals_expired, label: "expired", positive: false }
+          : undefined,
     },
     {
       title: "Equipment Units",
-      value: "89",
-      subtitle: "67 available",
+      value: String(data.equipment_count),
+      subtitle: `${availableEquipment} available`,
       icon: <Wrench className="h-5 w-5 text-primary" />,
-      trend: { value: 5, label: "utilization up", positive: true },
     },
     {
-      title: "Today's Transactions",
-      value: "24",
-      subtitle: "8 pending approvals",
+      title: "Overdue Borrows",
+      value: String(data.overdue_borrows_count),
+      subtitle:
+        data.overdue_borrows_count > 0 ? "Items need attention" : "All clear",
       icon: <ArrowLeftRight className="h-5 w-5 text-primary" />,
-      trend: { value: 18, label: "vs yesterday", positive: true },
+      trend:
+        data.overdue_borrows_count > 0
+          ? {
+              value: data.overdue_borrows_count,
+              label: "overdue",
+              positive: false,
+            }
+          : undefined,
     },
   ];
 }
@@ -74,9 +118,11 @@ export interface UseInventoryDashboardResult {
 // ─── Hook ──────────────────────────────────────────────────────────────────
 
 export function useInventoryDashboard(): UseInventoryDashboardResult {
+  const { data: dashboardData } = useDashboardData();
+
   const config = useMemo<InventoryDashboardConfig>(() => {
     const dateLabel = buildDateLabel();
-    const kpiStats = buildKpiStats();
+    const kpiStats = buildKpiStats(dashboardData);
 
     return {
       header: {
@@ -132,7 +178,7 @@ export function useInventoryDashboard(): UseInventoryDashboardResult {
         },
       ],
     };
-  }, []);
+  }, [dashboardData]);
 
   return { config };
 }

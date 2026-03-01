@@ -1,70 +1,64 @@
 /* ═══════════════════════════════════════════════════════════════════════════
- * Users — Lab member management and access permissions.
+ * Users — Lab member management page.
  *
- * Single useState (search). Decomposed into named sub-components.
+ * All state lives in useUsersView().
+ * This file is pure declarative JSX — no useState, no business logic.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 // ─── External ──────────────────────────────────────────────────────────────
-import { useState } from "react";
-import { Plus, Users as UsersIcon, Shield, User, GraduationCap } from "lucide-react";
+import {
+    GraduationCap,
+    Pencil,
+    Plus,
+    Shield,
+    Trash2,
+    User,
+    Users as UsersIcon,
+} from "lucide-react";
 
 // ─── Internal Components ───────────────────────────────────────────────────
+import EmptyState from "@/components/EmptyState";
 import AppLayout from "@/components/layout/AppLayout";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import PageHeader from "@/components/shared/PageHeader";
 import SearchFilter from "@/components/shared/SearchFilter";
 import { Button } from "@/components/ui/button";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-// ─── Types ─────────────────────────────────────────────────────────────────
-
-interface LabUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  department: string;
-  status: "Active" | "Inactive";
-  lastActive: string;
-}
-
-// ─── Constants ─────────────────────────────────────────────────────────────
-
-const USERS_DATA: LabUser[] = [
-  { id: "U-001", name: "Dr. Sarah Chen", email: "sarah.chen@university.edu", role: "Lab Manager", department: "Agricultural Sciences", status: "Active", lastActive: "2 mins ago" },
-  { id: "U-002", name: "Dr. Michael Park", email: "m.park@university.edu", role: "Professor", department: "Plant Biology", status: "Active", lastActive: "15 mins ago" },
-  { id: "U-003", name: "Emily Rodriguez", email: "e.rodriguez@university.edu", role: "Research Assistant", department: "Agricultural Sciences", status: "Active", lastActive: "1 hour ago" },
-  { id: "U-004", name: "James Wilson", email: "j.wilson@university.edu", role: "Lab Technician", department: "Chemistry", status: "Active", lastActive: "3 hours ago" },
-  { id: "U-005", name: "Lisa Thompson", email: "l.thompson@university.edu", role: "PhD Student", department: "Plant Biology", status: "Active", lastActive: "Yesterday" },
-  { id: "U-006", name: "Dr. Robert Kim", email: "r.kim@university.edu", role: "Professor", department: "Molecular Biology", status: "Inactive", lastActive: "2 weeks ago" },
-];
-
-const roleIcon = (role: string) => {
-  if (role === "Lab Manager") return Shield;
-  if (role === "Professor") return GraduationCap;
-  return User;
-};
-
-const roleStyle = (role: string) => {
-  if (role === "Lab Manager") return "bg-muted text-primary";
-  if (role === "Professor") return "bg-accent text-accent-foreground";
-  if (role === "PhD Student") return "bg-warning/10 text-warning";
-  return "bg-muted text-muted-foreground";
-};
+// ─── Hook & Types ──────────────────────────────────────────────────────────
+import {
+    formatEnumLabel,
+    roleStyle,
+    USER_ROLES,
+    useUsersView,
+    type UserItem,
+} from "./useUsersView";
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * MAIN COMPONENT
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 const Users = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const view = useUsersView();
 
-  const filteredUsers = USERS_DATA.filter((u) => {
-    const q = searchQuery.toLowerCase();
-    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.department.toLowerCase().includes(q);
-  });
+  const hasResults = view.items.length > 0;
 
   return (
     <AppLayout>
@@ -73,18 +67,96 @@ const Users = () => {
           icon={UsersIcon}
           title="User Management"
           description="Manage lab members and access permissions"
-          actions={<Button className="gap-2"><Plus className="h-4 w-4" /> Add User</Button>}
+          actions={
+            <Button className="gap-2" onClick={view.openCreateForm}>
+              <Plus className="h-4 w-4" />
+              Add User
+            </Button>
+          }
         />
 
-        <SearchFilter query={searchQuery} onQueryChange={setSearchQuery} placeholder="Search users...">
-          <RoleFilter />
-          <StatusFilter />
+        <SearchFilter
+          query={view.searchQuery}
+          onQueryChange={view.updateSearchQuery}
+          placeholder="Search users..."
+        >
+          <RoleFilter
+            value={view.roleFilter}
+            onChange={view.updateRoleFilter}
+          />
         </SearchFilter>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredUsers.map((user) => <UserCard key={user.id} user={user} />)}
-        </div>
+        {view.isLoading && (
+          <p className="text-sm text-muted-foreground text-center py-12">
+            Loading users…
+          </p>
+        )}
+
+        {view.isError && (
+          <p className="text-sm text-destructive text-center py-12">
+            Failed to load users. Please try again.
+          </p>
+        )}
+
+        {!view.isLoading && !view.isError && !hasResults && (
+          <EmptyState
+            icon={UsersIcon}
+            title="No users found"
+            description="Try adjusting your search or role filter."
+          />
+        )}
+
+        {hasResults && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {view.items.map((user) => (
+              <UserCard
+                key={user.id}
+                user={user}
+                onEdit={view.openEditForm}
+                onDelete={view.requestDeleteUser}
+              />
+            ))}
+          </div>
+        )}
+
+        <footer className="flex items-center justify-between text-sm text-muted-foreground">
+          <p>
+            Showing {view.items.length} of {view.totalCount} users
+          </p>
+          {view.meta && view.meta.last_page > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={view.page <= 1}
+                onClick={() => view.setPage(view.page - 1)}
+              >
+                Previous
+              </Button>
+              <span className="text-xs">
+                Page {view.meta.current_page} of {view.meta.last_page}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={view.page >= view.meta.last_page}
+                onClick={() => view.setPage(view.page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </footer>
       </div>
+
+      <UserFormDialog view={view} />
+      <ConfirmDialog
+        open={view.deleteDialog.open}
+        onOpenChange={view.deleteDialog.setOpen}
+        onConfirm={view.confirmDeleteUser}
+        title={view.deleteDialog.pendingMeta.title}
+        description={view.deleteDialog.pendingMeta.description}
+      />
     </AppLayout>
   );
 };
@@ -95,75 +167,266 @@ export default Users;
  * SUB-COMPONENTS
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Filters (static, non-functional — as in original) ─────────────────── */
+/* ─── Role Filter ───────────────────────────────────────────────────────── */
 
-const RoleFilter = () => (
-  <Select>
-    <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Roles" /></SelectTrigger>
+const RoleFilter = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger className="w-full sm:w-40">
+      <SelectValue placeholder="All Roles" />
+    </SelectTrigger>
     <SelectContent>
       <SelectItem value="all">All Roles</SelectItem>
-      <SelectItem value="manager">Lab Manager</SelectItem>
-      <SelectItem value="professor">Professor</SelectItem>
-      <SelectItem value="assistant">Research Assistant</SelectItem>
-      <SelectItem value="technician">Lab Technician</SelectItem>
-      <SelectItem value="student">PhD Student</SelectItem>
-    </SelectContent>
-  </Select>
-);
-
-const StatusFilter = () => (
-  <Select>
-    <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Status" /></SelectTrigger>
-    <SelectContent>
-      <SelectItem value="all">All Status</SelectItem>
-      <SelectItem value="active">Active</SelectItem>
-      <SelectItem value="inactive">Inactive</SelectItem>
+      {USER_ROLES.map((r) => (
+        <SelectItem key={r} value={r}>
+          {formatEnumLabel(r)}
+        </SelectItem>
+      ))}
     </SelectContent>
   </Select>
 );
 
 /* ─── User Card ─────────────────────────────────────────────────────────── */
 
-const UserCard = ({ user }: { user: LabUser }) => {
-  const initials = user.name.split(" ").map((n) => n[0]).join("");
+const roleIcon = (role: string) => {
+  switch (role) {
+    case "admin":
+      return Shield;
+    case "lab_manager":
+      return GraduationCap;
+    default:
+      return User;
+  }
+};
+
+const UserCard = ({
+  user,
+  onEdit,
+  onDelete,
+}: {
+  user: UserItem;
+  onEdit: (u: UserItem) => void;
+  onDelete: (u: UserItem) => void;
+}) => {
+  const initials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
   const RoleIcon = roleIcon(user.role);
-  const isActive = user.status === "Active";
 
   return (
-    <div className="bg-card rounded-xl p-5 border border-border/60 hover:bg-muted/30 transition-colors cursor-pointer">
+    <div className="bg-card rounded-xl p-5 border border-border/60 hover:bg-muted/30 transition-colors">
       <div className="flex items-start gap-4">
         <AvatarCircle initials={initials} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium text-foreground truncate">{user.name}</h3>
-            <StatusDot active={isActive} />
-          </div>
+          <h3 className="font-medium text-foreground truncate">{user.name}</h3>
           <p className="text-sm text-muted-foreground truncate">{user.email}</p>
         </div>
       </div>
 
       <div className="mt-4 space-y-2">
-        <span className={cn("inline-flex items-center gap-2 px-2.5 py-0.5 text-xs font-medium border rounded-lg", roleStyle(user.role))}>
+        <span
+          className={cn(
+            "inline-flex items-center gap-2 px-2.5 py-0.5 text-xs font-medium border rounded-lg",
+            roleStyle(user.role),
+          )}
+        >
           <RoleIcon className="h-4 w-4" />
-          {user.role}
+          {formatEnumLabel(user.role)}
         </span>
-        <p className="text-sm text-muted-foreground">{user.department}</p>
+        {user.phone && (
+          <p className="text-sm text-muted-foreground">{user.phone}</p>
+        )}
       </div>
 
       <div className="mt-4 pt-4 border-t border-border/40 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Last active: {user.lastActive}</span>
-        <Button variant="ghost" size="sm" className="text-xs">View Profile</Button>
+        <span className="text-xs text-muted-foreground">
+          Joined {new Date(user.created_at).toLocaleDateString()}
+        </span>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            aria-label={`Edit ${user.name}`}
+            onClick={() => onEdit(user)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            aria-label={`Delete ${user.name}`}
+            onClick={() => onDelete(user)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
 };
 
+/* ─── Avatar ────────────────────────────────────────────────────────────── */
+
 const AvatarCircle = ({ initials }: { initials: string }) => (
   <div className="w-12 h-12 bg-muted/50 rounded-lg flex items-center justify-center shrink-0">
-    <span className="text-lg font-medium text-muted-foreground">{initials}</span>
+    <span className="text-lg font-medium text-muted-foreground">
+      {initials}
+    </span>
   </div>
 );
 
-const StatusDot = ({ active }: { active: boolean }) => (
-  <span className={cn("w-2.5 h-2.5 shrink-0 rounded-full", active ? "bg-primary" : "bg-muted-foreground/30")} />
+/* ─── Form Dialog ───────────────────────────────────────────────────────── */
+
+const UserFormDialog = ({
+  view,
+}: {
+  view: ReturnType<typeof useUsersView>;
+}) => (
+  <Dialog
+    open={view.formOpen}
+    onOpenChange={(open) => {
+      if (!open) view.closeForm();
+    }}
+  >
+    <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{view.formTitle}</DialogTitle>
+        <DialogDescription>{view.formDescription}</DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4 py-4">
+        <p className="text-xs text-muted-foreground">
+          <span className="text-destructive">*</span> indicates a required field
+        </p>
+
+        <div className="space-y-2">
+          <Label htmlFor="user-name">Full Name *</Label>
+          <Input
+            id="user-name"
+            placeholder="e.g., Dr. Sarah Chen"
+            value={view.form.name}
+            onChange={(e) => view.updateFormField("name", e.target.value)}
+          />
+          {view.formErrors.name && (
+            <p className="text-xs text-destructive">{view.formErrors.name}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="user-email">Email *</Label>
+          <Input
+            id="user-email"
+            type="email"
+            placeholder="e.g., sarah.chen@university.edu"
+            value={view.form.email}
+            onChange={(e) => view.updateFormField("email", e.target.value)}
+          />
+          {view.formErrors.email && (
+            <p className="text-xs text-destructive">{view.formErrors.email}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="user-phone">Phone</Label>
+          <Input
+            id="user-phone"
+            type="tel"
+            placeholder="e.g., +1 555-0123"
+            value={view.form.phone}
+            onChange={(e) => view.updateFormField("phone", e.target.value)}
+          />
+          {view.formErrors.phone && (
+            <p className="text-xs text-destructive">{view.formErrors.phone}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="user-role">Role *</Label>
+          <Select
+            value={view.form.role}
+            onValueChange={(v) => view.updateFormField("role", v)}
+          >
+            <SelectTrigger id="user-role">
+              <SelectValue placeholder="Select role" />
+            </SelectTrigger>
+            <SelectContent>
+              {USER_ROLES.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {formatEnumLabel(r)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {view.formErrors.role && (
+            <p className="text-xs text-destructive">{view.formErrors.role}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="user-password">
+            Password {view.isEditing ? "(leave blank to keep)" : "*"}
+          </Label>
+          <Input
+            id="user-password"
+            type="password"
+            placeholder={
+              view.isEditing ? "Leave blank to keep current" : "Enter password"
+            }
+            value={view.form.password}
+            onChange={(e) => view.updateFormField("password", e.target.value)}
+          />
+          {view.formErrors.password && (
+            <p className="text-xs text-destructive">
+              {view.formErrors.password}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="user-password-confirm">
+            Confirm Password {view.isEditing ? "" : "*"}
+          </Label>
+          <Input
+            id="user-password-confirm"
+            type="password"
+            placeholder="Confirm password"
+            value={view.form.passwordConfirmation}
+            onChange={(e) =>
+              view.updateFormField("passwordConfirmation", e.target.value)
+            }
+          />
+          {view.formErrors.passwordConfirmation && (
+            <p className="text-xs text-destructive">
+              {view.formErrors.passwordConfirmation}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={view.closeForm}>
+          Cancel
+        </Button>
+        <Button
+          onClick={view.submitUserForm}
+          disabled={!view.canSubmitForm || view.isSubmitting}
+        >
+          {view.isSubmitting
+            ? "Saving…"
+            : view.isEditing
+              ? "Save Changes"
+              : "Create User"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 );

@@ -5,56 +5,44 @@
  * This file is pure declarative JSX — no useState, no business logic.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-import {
-    FlaskConical,
-    Leaf,
-    MapPin,
-    Pencil,
-    Plus,
-    Trash2,
-    User,
-} from "lucide-react";
+import { Leaf, Pencil, Plus, Trash2 } from "lucide-react";
 
 import EmptyState from "@/components/EmptyState";
 import AppLayout from "@/components/layout/AppLayout";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import PageHeader from "@/components/shared/PageHeader";
-import QuantityBadge from "@/components/shared/QuantityBadge";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
 import { ViewToggle } from "@/components/shared/ViewToggle";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProductCard } from "@/components/ui/ProductCard";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-
-import { STATUS_COLORS, usePlantVarietiesView } from "./usePlantVarietiesView";
+import { usePlantVarietiesView } from "./usePlantVarietiesView";
 
 const PlantVarieties = () => {
   const view = usePlantVarietiesView();
@@ -84,20 +72,6 @@ const PlantVarieties = () => {
             placeholder="Search varieties by name, code, species, owner..."
           />
           <div className="flex items-center gap-2">
-            <Select
-              value={view.statusFilter}
-              onValueChange={view.setStatusFilter}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Archived">Archived</SelectItem>
-                <SelectItem value="Destroyed">Destroyed</SelectItem>
-              </SelectContent>
-            </Select>
             <ViewToggle current={view.viewMode} onChange={view.setViewMode} />
           </div>
         </div>
@@ -114,7 +88,7 @@ const PlantVarieties = () => {
               return (
                 <ProductCard
                   key={item.id}
-                  image={item.images?.[0]}
+                  image={item.image_url || undefined}
                   fallbackImage={
                     <>
                       <Icon
@@ -123,39 +97,23 @@ const PlantVarieties = () => {
                         strokeWidth={1.2}
                       />
                       <span className="mt-3 text-xs font-medium tracking-widest text-muted-foreground">
-                        {item.speciesName}
+                        {item.plant_species?.common_name ?? "—"}
                       </span>
                     </>
                   }
                   title={item.name}
-                  subtitle={item.varietyCode}
-                  id={item.varietyCode}
-                  statusBadge={
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        className={cn(
-                          "text-xs shrink-0",
-                          STATUS_COLORS[item.status] ?? "",
-                        )}
-                      >
-                        {item.status}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs gap-1">
-                        <FlaskConical className="h-3 w-3" />
-                        {item.sampleCount}
-                      </Badge>
-                    </div>
-                  }
+                  subtitle={item.variety_code}
+                  id={item.variety_code}
+                  statusBadge={undefined}
                   meta={
                     [
-                      { label: "Species:", value: item.speciesName },
-                      item.ownershipUserName
-                        ? {
-                            icon: User,
-                            value: item.ownershipUserName,
-                          }
+                      {
+                        label: "Species:",
+                        value: item.plant_species?.common_name ?? "—",
+                      },
+                      item.description
+                        ? { label: "Desc:", value: item.description }
                         : null,
-                      { icon: MapPin, value: item.originLocation },
                     ].filter(Boolean) as any
                   }
                   tags={[]}
@@ -177,11 +135,7 @@ const PlantVarieties = () => {
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Species</TableHead>
-                  <TableHead>Samples</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Origin</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -189,39 +143,14 @@ const PlantVarieties = () => {
                 {view.filteredItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">
-                      {item.varietyCode}
+                      {item.variety_code}
                     </TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="text-xs italic">
-                      {item.speciesName}
+                      {item.plant_species?.common_name ?? "—"}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs gap-1">
-                        <FlaskConical className="h-3 w-3" />
-                        {item.sampleCount}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <QuantityBadge
-                        quantity={item.totalQuantity}
-                        unit={item.quantityUnit}
-                      />
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {item.ownershipUserName ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {item.originLocation}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          "text-xs",
-                          STATUS_COLORS[item.status] ?? "",
-                        )}
-                      >
-                        {item.status}
-                      </Badge>
+                    <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
+                      {item.description || "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -286,86 +215,22 @@ const PlantVarieties = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {view.species.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.commonName} ({s.scientificName})
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.common_name} ({s.scientific_name})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Unique Code</Label>
+              <Label>Variety Code</Label>
               <Input
-                value={view.form.uniqueCode}
+                value={view.form.varietyCode}
                 onChange={(e) =>
-                  view.setForm({ ...view.form, uniqueCode: e.target.value })
+                  view.setForm({ ...view.form, varietyCode: e.target.value })
                 }
                 placeholder="Auto-generated if left blank"
               />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Owner Name</Label>
-                <Input
-                  value={view.form.ownershipUserName}
-                  onChange={(e) =>
-                    view.setForm({
-                      ...view.form,
-                      ownershipUserName: e.target.value,
-                    })
-                  }
-                  placeholder="Owner name"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Department</Label>
-                <Input
-                  value={view.form.ownershipDepartment}
-                  onChange={(e) =>
-                    view.setForm({
-                      ...view.form,
-                      ownershipDepartment: e.target.value,
-                    })
-                  }
-                  placeholder="Department"
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Origin Location *</Label>
-              <Input
-                value={view.form.originLocation}
-                onChange={(e) =>
-                  view.setForm({ ...view.form, originLocation: e.target.value })
-                }
-                placeholder="Province, Country"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Date Brought to Lab</Label>
-              <Input
-                type="date"
-                value={view.form.dateBrought}
-                onChange={(e) =>
-                  view.setForm({ ...view.form, dateBrought: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Status</Label>
-              <Select
-                value={view.form.status}
-                onValueChange={(v) => view.setForm({ ...view.form, status: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Archived">Archived</SelectItem>
-                  <SelectItem value="Destroyed">Destroyed</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Description</Label>
@@ -379,14 +244,13 @@ const PlantVarieties = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Notes</Label>
-              <Textarea
-                value={view.form.notes}
+              <Label>Image URL</Label>
+              <Input
+                value={view.form.imageUrl}
                 onChange={(e) =>
-                  view.setForm({ ...view.form, notes: e.target.value })
+                  view.setForm({ ...view.form, imageUrl: e.target.value })
                 }
-                placeholder="Additional notes..."
-                rows={2}
+                placeholder="https://..."
               />
             </div>
           </div>

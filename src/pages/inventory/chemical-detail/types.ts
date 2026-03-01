@@ -1,40 +1,22 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CHEMICAL DETAIL — Domain Types & Configuration Contracts (Phase 1)
-// ═══════════════════════════════════════════════════════════════════════════
-//
-// Mirrors the Equipment/Species/Batch type architecture exactly:
-// - Shared atomic shapes (KpiStat, InfoField, ActionButton, etc.)
-// - Closed discriminated union for every renderable section
-// - Page-level config that bundles header + hero + KPI + sections
-// - Registry contract enforced via `satisfies`
+// CHEMICAL DETAIL — Domain Types & Configuration Contracts
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { LucideIcon } from "lucide-react";
 
 export type {
-  KpiStat,
-  InfoField,
-  ActionButton,
-  DetailHeaderConfig,
-  HeroImageConfig,
+    ActionButton,
+    DetailHeaderConfig,
+    HeroImageConfig, InfoField, KpiStat
 } from "@/components/detail/detail-types";
 
 import type {
-  KpiStat,
-  InfoField,
-  ActionButton,
-  DetailHeaderConfig,
-  HeroImageConfig,
+    ActionButton,
+    DetailHeaderConfig,
+    HeroImageConfig,
+    InfoField,
+    KpiStat,
 } from "@/components/detail/detail-types";
-
-// ─── Domain-Specific Data Shapes ─────────────────────────────────────────
-
-export interface UsageRecord {
-  date: string;
-  user: string;
-  amountUsed: string;
-  purpose: string;
-}
 
 // ─── Section Configurations (Discriminated Union) ────────────────────────
 
@@ -54,22 +36,8 @@ export interface SafetyHazardSection {
   notes: string | null;
 }
 
-export interface UsageRecordsSection {
-  readonly kind: "usage-records";
-  title: string;
-  icon: LucideIcon;
-  records: UsageRecord[];
-}
-
 export interface StorageRequirementsSection {
   readonly kind: "storage-requirements";
-  title: string;
-  icon: LucideIcon;
-  fields: InfoField[];
-}
-
-export interface SupplierDetailsSection {
-  readonly kind: "supplier-details";
   title: string;
   icon: LucideIcon;
   fields: InfoField[];
@@ -85,9 +53,7 @@ export interface DatesSection {
 export type DetailSection =
   | ChemicalPropertiesSection
   | SafetyHazardSection
-  | UsageRecordsSection
   | StorageRequirementsSection
-  | SupplierDetailsSection
   | DatesSection;
 
 // ─── Page-Level Configuration ────────────────────────────────────────────

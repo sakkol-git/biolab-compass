@@ -1,281 +1,308 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  * usePlantSamplesView — State + logic for the Plant Samples page.
+ *
+ * Connects to Laravel backend via React Query + plantSampleService.
+ * API response is nested (identity/relationships/details/lab_info/meta),
+ * but payload is flat.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
-import { speciesDetailData } from "@/data/mockDetailData";
-import { plantSamplesData } from "@/data/mockInventoryData";
-import { usePersistedState } from "@/lib/persistence";
 import {
-    collectErrors,
-    type FieldErrors,
-    isValid,
-    required,
-    sanitizeForm,
-    throttleSubmit,
-    validateForeignKey,
-} from "@/lib/validation";
+    useCreatePlantSample,
+    useDeletePlantSample,
+    usePlantSampleList,
+    useUpdatePlantSample,
+} from "@/hooks/usePlantSampleQuery";
+import { usePlantSpeciesList } from "@/hooks/usePlantSpeciesQuery";
+import { isValidationError } from "@/types/api-error";
+import type { LabLocation, SampleStatus } from "@/types/enums";
+import { formatEnumLabel, LAB_LOCATIONS, SAMPLE_STATUSES } from "@/types/enums";
+import type { PlantSampleApi, PlantSamplePayload } from "@/types/plant-sample";
 import type { LucideIcon } from "lucide-react";
 import { TestTube } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-export interface SampleItem {
-  id: string;
-  sampleCode: string;
-  // Hierarchical structure
-  varietyId: string;
-  varietyName?: string;
-  speciesId: string;
-  speciesName: string;
-  name: string;
-  uniqueCode: string;
-  ownershipUserName?: string;
-  ownershipDepartment?: string;
-  originLocation?: string;
-  description?: string;
-  dateBrought?: string;
-  status: string;
+// ─── Types ─────────────────────────────────────────────────────────────────
+
+export type SampleItem = PlantSampleApi & {
   icon: LucideIcon;
   color: string;
-  images?: string[];
-  // Physical quantity
-  quantity: number;
-  quantityUnit: string;
-  storageLocation?: string;
-  viabilityStatus?: string;
-}
+};
 
 export interface SampleForm {
   name: string;
+  sampleCode: string;
   speciesId: string;
-  uniqueCode: string;
-  ownershipUserName: string;
-  ownershipDepartment: string;
+  varietyId: string;
+  ownerName: string;
+  department: string;
   originLocation: string;
-  description: string;
-  dateBrought: string;
+  broughtAt: string;
+  labLocation: string;
   status: string;
-  notes: string;
+  quantity: string;
+  description: string;
+  imageUrl: string;
 }
 
 const EMPTY_FORM: SampleForm = {
   name: "",
+  sampleCode: "",
   speciesId: "",
-  uniqueCode: "",
-  ownershipUserName: "",
-  ownershipDepartment: "",
+  varietyId: "",
+  ownerName: "",
+  department: "",
   originLocation: "",
+  broughtAt: "",
+  labLocation: "",
+  status: "active",
+  quantity: "",
   description: "",
-  dateBrought: "",
-  status: "Active",
-  notes: "",
+  imageUrl: "",
 };
 
+// ─── Constants ─────────────────────────────────────────────────────────────
+
 const STATUS_COLORS: Record<string, string> = {
-  Active:
+  active:
     "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950",
-  Archived: "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950",
-  Destroyed: "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950",
+  inactive: "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950",
+  archived: "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950",
 };
 
 export { STATUS_COLORS };
 
+    export { formatEnumLabel, LAB_LOCATIONS, SAMPLE_STATUSES };
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function toSampleItem(s: PlantSampleApi): SampleItem {
+  return { ...s, icon: TestTube, color: "text-blue-600" };
+}
+
+function formToPayload(form: SampleForm): PlantSamplePayload {
+  return {
+    sample_name: form.name,
+    sample_code: form.sampleCode,
+    plant_specy_id: Number(form.speciesId),
+    plant_variety_id: form.varietyId ? Number(form.varietyId) : null,
+    owner_name: form.ownerName || null,
+    department: form.department || null,
+    origin_location: form.originLocation || null,
+    brought_at: form.broughtAt || null,
+    lab_location: (form.labLocation as LabLocation) || null,
+    status: form.status as SampleStatus,
+    quantity: Number(form.quantity) || 0,
+    description: form.description || null,
+    image_url: form.imageUrl || null,
+  };
+}
+
+function sampleToForm(item: PlantSampleApi): SampleForm {
+  return {
+    name: item.identity.name,
+    sampleCode: item.identity.code,
+    speciesId: item.relationships.species
+      ? String(item.relationships.species.id)
+      : "",
+    varietyId: item.relationships.variety
+      ? String(item.relationships.variety.id)
+      : "",
+    ownerName: item.details.owner || "",
+    department: item.details.department || "",
+    originLocation: item.details.origin || "",
+    broughtAt: item.lab_info.brought_at || "",
+    labLocation: item.lab_info.location || "",
+    status: item.identity.status,
+    quantity: String(item.details.quantity),
+    description: item.meta.description || "",
+    imageUrl: item.meta.image || "",
+  };
+}
+
+// ─── Backend Error Field Map ────────────────────────────────────────────────
+
+const BACKEND_FIELD_MAP: Record<string, keyof SampleForm> = {
+  sample_name: "name",
+  sample_code: "sampleCode",
+  plant_specy_id: "speciesId",
+  plant_variety_id: "varietyId",
+  owner_name: "ownerName",
+  department: "department",
+  origin_location: "originLocation",
+  brought_at: "broughtAt",
+  lab_location: "labLocation",
+  status: "status",
+  quantity: "quantity",
+  description: "description",
+  image_url: "imageUrl",
+};
+
+type FormErrors = Partial<Record<keyof SampleForm, string>>;
+
+function mapBackendErrors(errors: Record<string, string[]>): FormErrors {
+  const mapped: FormErrors = {};
+  for (const [key, msgs] of Object.entries(errors)) {
+    const field = BACKEND_FIELD_MAP[key];
+    if (field) mapped[field] = msgs[0];
+  }
+  return mapped;
+}
+
+// ─── Hook ──────────────────────────────────────────────────────────────────
+
 export function usePlantSamplesView() {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
+  // ── Data from backend (paginated) ──
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const queryParams: Record<string, unknown> = { page };
+  if (searchQuery) queryParams.search = searchQuery;
+  if (statusFilter !== "all") queryParams.status = statusFilter;
+
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = usePlantSampleList(queryParams);
+
+  const rawItems = response?.data ?? [];
+  const meta = response?.meta;
+  const items: SampleItem[] = rawItems
+    .map(toSampleItem)
+    .sort((a, b) => a.id - b.id);
+
+  // ── Species list for dropdown ──
+  const { data: speciesResponse } = usePlantSpeciesList({ per_page: 100 });
+  const species = speciesResponse?.data ?? [];
+
+  // ── Mutations ──
+  const createMutation = useCreatePlantSample();
+  const updateMutation = useUpdatePlantSample();
+  const deleteMutation = useDeletePlantSample();
+
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<SampleForm>(EMPTY_FORM);
-  const [formErrors, setFormErrors] = useState<FieldErrors<keyof SampleForm>>(
-    {},
-  );
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   // ── Delete confirmation ──
   const deleteDialog = useConfirmDialog();
 
-  const [items, setItems] = usePersistedState<SampleItem[]>(
-    "plant_samples",
-    plantSamplesData.map((s) => ({
-      id: s.id,
-      sampleCode: s.sampleCode,
-      varietyId: s.varietyId,
-      varietyName: s.varietyName,
-      speciesId: s.speciesId,
-      speciesName: s.speciesName || "",
-      name: s.name,
-      uniqueCode: s.sampleCode,
-      ownershipUserName: s.ownershipUserName,
-      ownershipDepartment: s.ownershipDepartment,
-      originLocation: s.originLocation,
-      description: s.description,
-      dateBrought: s.dateBrought,
-      status: s.status,
-      icon: TestTube,
-      color: "text-blue-600",
-      images: s.images,
-      quantity: s.quantity || 0,
-      quantityUnit: s.quantityUnit || "units",
-      storageLocation: s.storageLocation,
-      viabilityStatus: s.viabilityStatus,
-    })),
-  );
-
-  const species = Object.values(speciesDetailData);
-
-  const filteredItems = useMemo(() => {
-    let result = items;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (i) =>
-          i.name.toLowerCase().includes(q) ||
-          i.uniqueCode.toLowerCase().includes(q) ||
-          i.speciesName.toLowerCase().includes(q) ||
-          (i.ownershipUserName?.toLowerCase() ?? "").includes(q) ||
-          i.originLocation.toLowerCase().includes(q),
-      );
-    }
-    if (statusFilter !== "all") {
-      result = result.filter((i) => i.status === statusFilter);
-    }
-    return result;
-  }, [items, searchQuery, statusFilter]);
+  // ── Derived ──
+  const filteredItems = items; // Server-side filtering
 
   const stats: Stat[] = [
-    { label: "Total Samples", value: items.length, color: "primary" },
+    {
+      label: "Total Samples",
+      value: meta?.total ?? items.length,
+      color: "primary",
+    },
     {
       label: "Active",
-      value: items.filter((i) => i.status === "Active").length,
+      value: items.filter((i) => i.identity.status === "active").length,
       color: "primary",
     },
     {
       label: "Archived",
-      value: items.filter((i) => i.status === "Archived").length,
+      value: items.filter((i) => i.identity.status === "archived").length,
       color: "warning",
     },
   ];
 
+  // ── Actions ──
   const openCreateForm = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setFormErrors({});
     setDialogOpen(true);
   };
 
   const openEditForm = (item: SampleItem) => {
     setEditingId(item.id);
-    setForm({
-      name: item.name,
-      speciesId: item.speciesId,
-      uniqueCode: item.uniqueCode,
-      ownershipUserName: item.ownershipUserName ?? "",
-      ownershipDepartment: item.ownershipDepartment ?? "",
-      originLocation: item.originLocation,
-      description: item.description ?? "",
-      dateBrought: item.dateBrought ?? "",
-      status: item.status,
-      notes: "",
-    });
+    setForm(sampleToForm(item));
+    setFormErrors({});
     setDialogOpen(true);
   };
 
   const handleSave = () => {
-    // ── Throttle guard ──
-    const throttleErr = throttleSubmit("sample_form", 1000);
-    if (throttleErr) {
-      toast.error(throttleErr);
-      return;
-    }
-
-    const clean = sanitizeForm(form);
-
-    // ── Validate ──
-    const errors = collectErrors<keyof SampleForm>({
-      name: required(clean.name, "Sample name"),
-      speciesId: validateForeignKey(species, clean.speciesId, "Species"),
-      originLocation: required(clean.originLocation, "Origin location"),
-      uniqueCode: undefined,
-      ownershipUserName: undefined,
-      ownershipDepartment: undefined,
-      description: undefined,
-      dateBrought: undefined,
-      status: undefined,
-      notes: undefined,
-    });
-    if (!isValid(errors)) {
-      setFormErrors(errors);
-      toast.error("Please fix the highlighted errors");
+    if (!form.name || !form.speciesId || !form.quantity) {
+      toast.error("Please fill in all required fields");
       return;
     }
     setFormErrors({});
 
-    const matchedSpecies = species.find((s) => s.id === clean.speciesId);
+    const payload = formToPayload(form);
+
     if (editingId) {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                ...clean,
-                speciesName: matchedSpecies?.scientificName ?? item.speciesName,
-              }
-            : item,
-        ),
-      );
-      toast.success(`Sample "${clean.name}" updated`);
-    } else {
-      const newId = `PS-${String(items.length + 1).padStart(3, "0")}`;
-      setItems((prev) => [
-        ...prev,
+      updateMutation.mutate(
+        { id: editingId, payload },
         {
-          id: newId,
-          sampleCode: newId,
-          varietyId: "",
-          varietyName: "",
-          speciesId: clean.speciesId,
-          speciesName: matchedSpecies?.scientificName ?? "",
-          name: clean.name,
-          uniqueCode:
-            clean.uniqueCode ||
-            `PS-SMP-${String(items.length + 1).padStart(4, "0")}`,
-          ownershipUserName: clean.ownershipUserName,
-          ownershipDepartment: clean.ownershipDepartment,
-          originLocation: clean.originLocation,
-          description: clean.description,
-          dateBrought: clean.dateBrought,
-          status: clean.status,
-          icon: TestTube,
-          color: "text-blue-600",
-          images: [],
-          quantity: 0,
-          quantityUnit: "units",
-          storageLocation: "",
-          viabilityStatus: "Unknown",
+          onSuccess: () => {
+            setDialogOpen(false);
+            setForm(EMPTY_FORM);
+            setEditingId(null);
+            toast.success(`Sample "${form.name}" updated successfully`);
+          },
+          onError: (err) => {
+            if (isValidationError(err)) {
+              setFormErrors(mapBackendErrors(err.response.data.errors));
+            }
+            toast.error(
+              isValidationError(err)
+                ? err.response.data.message
+                : "Failed to update sample",
+            );
+          },
         },
-      ]);
-      toast.success(`Sample "${clean.name}" added`);
+      );
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          setDialogOpen(false);
+          setForm(EMPTY_FORM);
+          setEditingId(null);
+          toast.success(`Sample "${form.name}" added successfully`);
+        },
+        onError: (err) => {
+          if (isValidationError(err)) {
+            setFormErrors(mapBackendErrors(err.response.data.errors));
+          }
+          toast.error(
+            isValidationError(err)
+              ? err.response.data.message
+              : "Failed to create sample",
+          );
+        },
+      });
     }
-    setDialogOpen(false);
   };
 
   const requestDeleteSample = (item: SampleItem) => {
-    deleteDialog.requestConfirm(item.id, {
-      title: `Delete ${item.name}?`,
-      description: `This will permanently remove sample ${item.name} (${item.id}).`,
+    deleteDialog.requestConfirm(String(item.id), {
+      title: `Delete ${item.identity.name}?`,
+      description: `This will permanently remove sample ${item.identity.name} (${item.identity.code}).`,
     });
   };
 
   const confirmDeleteSample = () => {
     deleteDialog.confirm((id) => {
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      toast.success("Sample deleted");
+      deleteMutation.mutate(Number(id), {
+        onSuccess: () => toast.success("Sample deleted"),
+        onError: () => toast.error("Failed to delete sample"),
+      });
     });
   };
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return {
     viewMode,
@@ -301,5 +328,11 @@ export function usePlantSamplesView() {
     requestDeleteSample,
     confirmDeleteSample,
     navigate,
+    isLoading,
+    isError,
+    isSubmitting,
+    page,
+    setPage,
+    meta,
   } as const;
 }

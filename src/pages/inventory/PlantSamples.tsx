@@ -8,7 +8,6 @@ import EmptyState from "@/components/EmptyState";
 import AppLayout from "@/components/layout/AppLayout";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import PageHeader from "@/components/shared/PageHeader";
-import QuantityBadge from "@/components/shared/QuantityBadge";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
 import { ViewToggle } from "@/components/shared/ViewToggle";
@@ -43,7 +42,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { STATUS_COLORS, usePlantSamplesView } from "./usePlantSamplesView";
+import {
+    formatEnumLabel,
+    LAB_LOCATIONS,
+    SAMPLE_STATUSES,
+    STATUS_COLORS,
+    usePlantSamplesView,
+} from "./usePlantSamplesView";
 
 const PlantSamples = () => {
   const view = usePlantSamplesView();
@@ -82,9 +87,11 @@ const PlantSamples = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Archived">Archived</SelectItem>
-                <SelectItem value="Destroyed">Destroyed</SelectItem>
+                {SAMPLE_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {formatEnumLabel(s)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <ViewToggle current={view.viewMode} onChange={view.setViewMode} />
@@ -103,7 +110,7 @@ const PlantSamples = () => {
               return (
                 <ProductCard
                   key={item.id}
-                  image={item.images?.[0]}
+                  image={item.meta.image || undefined}
                   fallbackImage={
                     <>
                       <Icon
@@ -112,41 +119,47 @@ const PlantSamples = () => {
                         strokeWidth={1.2}
                       />
                       <span className="mt-3 text-xs font-medium tracking-widest text-muted-foreground">
-                        {item.speciesName}
+                        {item.relationships.species?.common_name ?? "—"}
                       </span>
                     </>
                   }
-                  title={item.name}
+                  title={item.identity.name}
                   subtitle={
-                    item.varietyName
-                      ? `${item.varietyName} • ${item.sampleCode}`
-                      : item.sampleCode
+                    item.relationships.variety?.name
+                      ? `${item.relationships.variety.name} • ${item.identity.code}`
+                      : item.identity.code
                   }
-                  id={item.sampleCode}
+                  id={item.identity.code}
                   statusBadge={
                     <Badge
                       className={cn(
                         "text-xs shrink-0",
-                        STATUS_COLORS[item.status] ?? "",
+                        STATUS_COLORS[item.identity.status] ?? "",
                       )}
                     >
-                      {item.status}
+                      {formatEnumLabel(item.identity.status)}
                     </Badge>
                   }
                   meta={
                     [
-                      item.varietyName
-                        ? { label: "Variety:", value: item.varietyName }
-                        : null,
-                      { label: "Species:", value: item.speciesName },
-                      item.ownershipUserName
+                      item.relationships.variety?.name
                         ? {
-                            icon: User,
-                            value: item.ownershipUserName,
+                            label: "Variety:",
+                            value: item.relationships.variety.name,
                           }
                         : null,
-                      item.originLocation
-                        ? { icon: MapPin, value: item.originLocation }
+                      {
+                        label: "Species:",
+                        value: item.relationships.species?.common_name ?? "—",
+                      },
+                      item.details.owner
+                        ? {
+                            icon: User,
+                            value: item.details.owner,
+                          }
+                        : null,
+                      item.details.origin
+                        ? { icon: MapPin, value: item.details.origin }
                         : null,
                     ].filter(Boolean) as any
                   }
@@ -181,35 +194,36 @@ const PlantSamples = () => {
                 {view.filteredItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">
-                      {item.sampleCode}
+                      {item.identity.code}
                     </TableCell>
-                    <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.identity.name}
+                    </TableCell>
                     <TableCell className="text-xs">
-                      {item.varietyName || "—"}
+                      {item.relationships.variety?.name || "—"}
                     </TableCell>
                     <TableCell className="text-xs italic">
-                      {item.speciesName}
+                      {item.relationships.species?.common_name ?? "—"}
                     </TableCell>
-                    <TableCell>
-                      <QuantityBadge
-                        quantity={item.quantity}
-                        unit={item.quantityUnit}
-                      />
+                    <TableCell className="font-mono text-sm">
+                      {item.details.quantity}
                     </TableCell>
                     <TableCell className="text-xs">
-                      {item.storageLocation || "—"}
+                      {item.lab_info.location
+                        ? formatEnumLabel(item.lab_info.location)
+                        : "—"}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {item.ownershipUserName ?? "—"}
+                      {item.details.owner ?? "—"}
                     </TableCell>
                     <TableCell>
                       <Badge
                         className={cn(
                           "text-xs",
-                          STATUS_COLORS[item.status] ?? "",
+                          STATUS_COLORS[item.identity.status] ?? "",
                         )}
                       >
-                        {item.status}
+                        {formatEnumLabel(item.identity.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -275,32 +289,65 @@ const PlantSamples = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {view.species.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.commonName} ({s.scientificName})
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.common_name} ({s.scientific_name})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Unique Code</Label>
+              <Label>Sample Code</Label>
               <Input
-                value={view.form.uniqueCode}
+                value={view.form.sampleCode}
                 onChange={(e) =>
-                  view.setForm({ ...view.form, uniqueCode: e.target.value })
+                  view.setForm({ ...view.form, sampleCode: e.target.value })
                 }
                 placeholder="Auto-generated if left blank"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
+                <Label>Quantity *</Label>
+                <Input
+                  type="number"
+                  value={view.form.quantity}
+                  onChange={(e) =>
+                    view.setForm({ ...view.form, quantity: e.target.value })
+                  }
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Lab Location</Label>
+                <Select
+                  value={view.form.labLocation}
+                  onValueChange={(v) =>
+                    view.setForm({ ...view.form, labLocation: v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LAB_LOCATIONS.map((loc) => (
+                      <SelectItem key={loc} value={loc}>
+                        {formatEnumLabel(loc)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
                 <Label>Owner Name</Label>
                 <Input
-                  value={view.form.ownershipUserName}
+                  value={view.form.ownerName}
                   onChange={(e) =>
                     view.setForm({
                       ...view.form,
-                      ownershipUserName: e.target.value,
+                      ownerName: e.target.value,
                     })
                   }
                 />
@@ -308,18 +355,18 @@ const PlantSamples = () => {
               <div className="space-y-1.5">
                 <Label>Department</Label>
                 <Input
-                  value={view.form.ownershipDepartment}
+                  value={view.form.department}
                   onChange={(e) =>
                     view.setForm({
                       ...view.form,
-                      ownershipDepartment: e.target.value,
+                      department: e.target.value,
                     })
                   }
                 />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Origin Location *</Label>
+              <Label>Origin Location</Label>
               <Input
                 value={view.form.originLocation}
                 onChange={(e) =>
@@ -332,14 +379,14 @@ const PlantSamples = () => {
               <Label>Date Brought to Lab</Label>
               <Input
                 type="date"
-                value={view.form.dateBrought}
+                value={view.form.broughtAt}
                 onChange={(e) =>
-                  view.setForm({ ...view.form, dateBrought: e.target.value })
+                  view.setForm({ ...view.form, broughtAt: e.target.value })
                 }
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>Status *</Label>
               <Select
                 value={view.form.status}
                 onValueChange={(v) => view.setForm({ ...view.form, status: v })}
@@ -348,9 +395,11 @@ const PlantSamples = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Archived">Archived</SelectItem>
-                  <SelectItem value="Destroyed">Destroyed</SelectItem>
+                  {SAMPLE_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {formatEnumLabel(s)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -365,14 +414,27 @@ const PlantSamples = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Notes</Label>
-              <Textarea
-                value={view.form.notes}
+              <Label>Image URL</Label>
+              <Input
+                value={view.form.imageUrl}
                 onChange={(e) =>
-                  view.setForm({ ...view.form, notes: e.target.value })
+                  view.setForm({ ...view.form, imageUrl: e.target.value })
                 }
-                rows={2}
+                placeholder="https://..."
               />
+              {view.form.imageUrl && (
+                <img
+                  src={view.form.imageUrl}
+                  alt="Preview"
+                  className="mt-1 h-24 w-full object-cover rounded-md border"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  onLoad={(e) => {
+                    e.currentTarget.style.display = "block";
+                  }}
+                />
+              )}
             </div>
           </div>
           <DialogFooter>

@@ -7,7 +7,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { usePlantSpeciesById } from "@/hooks/usePlantSpeciesQuery";
-import type { PlantSpecies } from "@/types/inventory";
+import type { PlantSpeciesApi } from "@/types/plant-species";
 import { Flower2, Layers, Leaf, Sprout } from "lucide-react";
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
@@ -24,10 +24,10 @@ interface UseSpeciesDetailResult {
 
 // ─── Config Assembly (pure transform) ────────────────────────────────────
 
-function assembleConfig(data: PlantSpecies): SpeciesPageConfig {
-  const title = data.commonName
-    ? data.commonName + (data.khmerName ? ` (${data.khmerName})` : "")
-    : data.scientificName || `Species #${data.id}`;
+function assembleConfig(data: PlantSpeciesApi): SpeciesPageConfig {
+  const title = data.common_name
+    ? data.common_name + (data.khmer_name ? ` (${data.khmer_name})` : "")
+    : data.scientific_name || `Species #${data.id}`;
 
   return {
     header: {
@@ -36,30 +36,30 @@ function assembleConfig(data: PlantSpecies): SpeciesPageConfig {
       icon: Leaf,
       iconColor: SPECIES_ICON_COLOR,
       title,
-      subtitle: data.scientificName || "",
-      id: data.id && data.id !== "null" ? data.id : "",
+      subtitle: data.scientific_name || "",
+      id: String(data.id),
     },
 
-    heroImage: data.imageUrl
-      ? { url: data.imageUrl, alt: data.commonName, fallbackIcon: Sprout }
+    heroImage: data.image_url
+      ? { url: data.image_url, alt: data.common_name, fallbackIcon: Sprout }
       : null,
 
     kpiStrip: [
       {
         label: "Varieties",
-        value: data.varietyCount,
+        value: data.variety_count ?? 0,
         icon: Layers,
         color: "hsl(210, 60%, 50%)",
       },
       {
         label: "Samples",
-        value: data.sampleCount,
+        value: data.sample_count ?? 0,
         icon: Sprout,
         color: SPECIES_ICON_COLOR,
       },
     ],
 
-    actions: buildActions(data.scientificName),
+    actions: buildActions(data.scientific_name),
 
     mainSections: [
       {
@@ -69,11 +69,11 @@ function assembleConfig(data: PlantSpecies): SpeciesPageConfig {
         description: data.description || "No description available.",
         fields: [
           { label: "Family", value: data.family || "—" },
-          { label: "Growth Type", value: data.growthType || "—" },
-          { label: "Native Region", value: data.nativeRegion || "—" },
+          { label: "Growth Type", value: data.growth_type || "—" },
+          { label: "Native Region", value: data.native_region || "—" },
           {
             label: "Propagation Method",
-            value: data.propagationMethod || "—",
+            value: data.propagation_method || "—",
           },
         ],
       },
@@ -87,9 +87,8 @@ function assembleConfig(data: PlantSpecies): SpeciesPageConfig {
 
 export function useSpeciesDetail(): UseSpeciesDetailResult {
   const { id } = useParams<{ id: string }>();
-
-  // Guard: treat the literal string "null" or "undefined" in the URL as not-found
-  const safeId = id && id !== "null" && id !== "undefined" ? id : undefined;
+  const numericId = id ? Number(id) : undefined;
+  const safeId = numericId && !isNaN(numericId) ? numericId : undefined;
 
   const { data, isLoading, isError } = usePlantSpeciesById(safeId);
 

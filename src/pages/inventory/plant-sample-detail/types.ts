@@ -52,21 +52,13 @@ export interface NotesSection {
   content: string;
 }
 
-export interface ImagesSection {
-  readonly kind: "images";
-  title: string;
-  icon: LucideIcon;
-  images: string[];
-}
-
 // ─── Combined Section Union ──────────────────────────────────────────────
 
 export type DetailSection =
   | SampleInfoSection
   | OwnershipSection
   | StorageSection
-  | NotesSection
-  | ImagesSection;
+  | NotesSection;
 
 // ─── Page Configuration ──────────────────────────────────────────────────
 

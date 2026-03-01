@@ -1,15 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// PLANT SAMPLE DETAIL — Typed Custom Hook
+// PLANT SAMPLE DETAIL — Typed Custom Hook (Backend-Connected)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Fetches single sample from Laravel backend via React Query.
+// Returns a domain-ready view model — never raw API responses.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { Badge } from "@/components/ui/badge";
-import { plantSamplesData } from "@/data/mockInventoryData";
+import { usePlantSampleById } from "@/hooks/usePlantSampleQuery";
 import { cn } from "@/lib/utils";
-import type { PlantSample } from "@/types/inventory";
+import type { PlantSampleApi } from "@/types/plant-sample";
 import {
     Calendar,
     FileText,
-    Image as ImageIcon,
     Info,
     MapPin,
     Package,
@@ -17,7 +20,7 @@ import {
     Thermometer,
     User,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { buildActions, statusBadgeClass, statusColor } from "./domain";
 import type { SamplePageConfig } from "./types";
@@ -30,11 +33,32 @@ interface UseSampleDetailResult {
   config: SamplePageConfig | null;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 // ─── Config Assembly (pure transform) ──────────────────────────────────────
 
-function assembleConfig(data: PlantSample): SamplePageConfig {
-  const color = statusColor(data.status);
-  const badgeClass = statusBadgeClass(data.status);
+function assembleConfig(data: PlantSampleApi): SamplePageConfig {
+  const status = data.identity.status;
+  const color = statusColor(status);
+  const badgeClass = statusBadgeClass(status);
+
+  const speciesName =
+    data.relationships.species?.common_name ||
+    data.relationships.species?.scientific_name ||
+    "—";
+
+  const varietyName = data.relationships.variety?.name || null;
 
   return {
     header: {
@@ -42,48 +66,54 @@ function assembleConfig(data: PlantSample): SamplePageConfig {
       backLabel: "All Samples",
       icon: TestTube,
       iconColor: color,
-      title: data.name,
-      subtitle: `${data.speciesName} — ${data.sampleCode}`,
-      id: data.id,
+      title: data.identity.name,
+      subtitle: `${speciesName} — ${data.identity.code}`,
+      id: String(data.id),
     },
 
-    heroImage:
-      data.images && data.images.length > 0
-        ? { url: data.images[0], alt: data.name, fallbackIcon: TestTube }
-        : null,
+    heroImage: data.meta.image
+      ? {
+          url: data.meta.image,
+          alt: data.identity.name,
+          fallbackIcon: TestTube,
+        }
+      : null,
 
     kpiStrip: [
       {
         label: "Status",
-        value: data.status,
+        value: status,
         icon: Info,
         color,
       },
-      {
-        label: "Origin",
-        value: data.originLocation,
-        icon: MapPin,
-        color: "hsl(210, 60%, 50%)",
-      },
-      {
-        label: "Unique Code",
-        value: data.uniqueCode,
-        icon: TestTube,
-        color: "hsl(145, 63%, 32%)",
-      },
-      ...(data.quantity
+      ...(data.details.origin
         ? [
             {
-              label: "Quantity",
-              value: `${data.quantity} ${data.quantityUnit || "units"}`,
-              icon: Package,
-              color: "hsl(38, 92%, 50%)",
+              label: "Origin",
+              value: data.details.origin,
+              icon: MapPin,
+              color: "hsl(210, 60%, 50%)",
             },
           ]
         : []),
+      {
+        label: "Sample Code",
+        value: data.identity.code,
+        icon: TestTube,
+        color: "hsl(145, 63%, 32%)",
+      },
+      {
+        label: "Quantity",
+        value: data.details.quantity.toLocaleString(),
+        icon: Package,
+        color: "hsl(38, 92%, 50%)",
+      },
     ],
 
-    actions: buildActions(data.speciesId, data.varietyId),
+    actions: buildActions(
+      data.relationships.species?.id ?? null,
+      data.relationships.variety?.id ?? null,
+    ),
 
     mainSections: [
       {
@@ -91,139 +121,66 @@ function assembleConfig(data: PlantSample): SamplePageConfig {
         title: "Sample Information",
         icon: TestTube,
         fields: [
-          {
-            label: "Species",
-            value: data.speciesName,
-          },
-          ...(data.varietyName
-            ? [
-                {
-                  label: "Variety",
-                  value: data.varietyName,
-                },
-              ]
+          { label: "Name", value: data.identity.name },
+          { label: "Sample Code", value: data.identity.code, mono: true },
+          { label: "Species", value: speciesName },
+          ...(varietyName ? [{ label: "Variety", value: varietyName }] : []),
+          ...(data.details.origin
+            ? [{ label: "Origin", value: data.details.origin }]
             : []),
-          {
-            label: "Sample Code",
-            value: data.sampleCode,
-          },
-          {
-            label: "Unique Code",
-            value: data.uniqueCode,
-          },
-          {
-            label: "Origin Location",
-            value: data.originLocation,
-          },
-          ...(data.dateBrought
+          ...(data.lab_info.brought_at
             ? [
                 {
                   label: "Date Brought",
-                  value: new Date(data.dateBrought).toLocaleDateString(),
-                },
-              ]
-            : []),
-          ...(data.description
-            ? [
-                {
-                  label: "Description",
-                  value: data.description,
+                  value: formatDate(data.lab_info.brought_at),
                 },
               ]
             : []),
         ],
         statusBadge: (
-          <Badge className={cn(badgeClass, "font-medium")}>{data.status}</Badge>
+          <Badge className={cn(badgeClass, "font-medium")}>{status}</Badge>
         ),
       },
 
-      ...(data.ownershipUserName
+      ...(data.details.owner || data.details.department
         ? [
             {
               kind: "ownership" as const,
               title: "Ownership & Department",
               icon: User,
               fields: [
-                {
-                  label: "Owner",
-                  value: data.ownershipUserName,
-                },
-                ...(data.ownershipDepartment
-                  ? [
-                      {
-                        label: "Department",
-                        value: data.ownershipDepartment,
-                      },
-                    ]
+                ...(data.details.owner
+                  ? [{ label: "Owner", value: data.details.owner }]
                   : []),
-                ...(data.ownershipUserId
-                  ? [
-                      {
-                        label: "User ID",
-                        value: data.ownershipUserId,
-                      },
-                    ]
+                ...(data.details.department
+                  ? [{ label: "Department", value: data.details.department }]
                   : []),
               ],
             },
           ]
         : []),
 
-      ...(data.quantity || data.storageLocation || data.storageConditions
-        ? [
-            {
-              kind: "storage" as const,
-              title: "Storage & Inventory",
-              icon: Thermometer,
-              fields: [
-                ...(data.quantity
-                  ? [
-                      {
-                        label: "Quantity",
-                        value: `${data.quantity} ${data.quantityUnit || "units"}`,
-                      },
-                    ]
-                  : []),
-                ...(data.storageLocation
-                  ? [
-                      {
-                        label: "Storage Location",
-                        value: data.storageLocation,
-                      },
-                    ]
-                  : []),
-                ...(data.storageConditions
-                  ? [
-                      {
-                        label: "Storage Conditions",
-                        value: data.storageConditions,
-                      },
-                    ]
-                  : []),
-              ],
-            },
-          ]
-        : []),
+      {
+        kind: "storage" as const,
+        title: "Storage & Inventory",
+        icon: Thermometer,
+        fields: [
+          { label: "Quantity", value: data.details.quantity.toLocaleString() },
+          ...(data.lab_info.location
+            ? [{ label: "Lab Location", value: data.lab_info.location }]
+            : []),
+        ],
+      },
     ],
 
     sidebarSections: [
-      ...(data.notes
+      ...(data.meta.description
         ? [
             {
               kind: "notes" as const,
-              title: "Notes",
+              title: "Description",
               icon: FileText,
-              content: data.notes,
-            },
-          ]
-        : []),
-      ...(data.images && data.images.length > 0
-        ? [
-            {
-              kind: "images" as const,
-              title: "Images",
-              icon: ImageIcon,
-              images: data.images,
+              content: data.meta.description,
             },
           ]
         : []),
@@ -232,26 +189,8 @@ function assembleConfig(data: PlantSample): SamplePageConfig {
         title: "Metadata",
         icon: Calendar,
         fields: [
-          {
-            label: "Created",
-            value: new Date(data.createdAt).toLocaleDateString(),
-          },
-          ...(data.updatedAt
-            ? [
-                {
-                  label: "Last Updated",
-                  value: new Date(data.updatedAt).toLocaleDateString(),
-                },
-              ]
-            : []),
-          ...(data.updatedBy
-            ? [
-                {
-                  label: "Updated By",
-                  value: data.updatedBy,
-                },
-              ]
-            : []),
+          { label: "Created", value: formatDate(data.meta.created_at) },
+          { label: "Last Updated", value: formatDate(data.meta.updated_at) },
         ],
         statusBadge: null,
       },
@@ -263,24 +202,14 @@ function assembleConfig(data: PlantSample): SamplePageConfig {
 
 export function useSampleDetail(): UseSampleDetailResult {
   const { id } = useParams<{ id: string }>();
-  const [state, setState] = useState<"loading" | "not-found" | "ready">(
-    "loading",
-  );
+  const numericId = id ? Number(id) : undefined;
+  const safeId = numericId && !isNaN(numericId) ? numericId : undefined;
 
-  const sample = useMemo(() => {
-    return plantSamplesData.find((s) => s.id === id);
-  }, [id]);
+  const { data, isLoading, isError } = usePlantSampleById(safeId);
 
-  const config = useMemo(() => {
-    return sample ? assembleConfig(sample) : null;
-  }, [sample]);
+  const config = useMemo(() => (data ? assembleConfig(data) : null), [data]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setState(sample ? "ready" : "not-found");
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [sample]);
-
-  return { state, id, config };
+  if (isLoading) return { state: "loading", id, config: null };
+  if (isError || !data) return { state: "not-found", id, config: null };
+  return { state: "ready", id, config };
 }

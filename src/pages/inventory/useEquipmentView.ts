@@ -1,525 +1,376 @@
 /* ═══════════════════════════════════════════════════════════════════════════
- * useEquipmentView — All state, effects and business logic for Equipment.
- * The UI component reads this hook and renders pure, declarative JSX.
+ * useEquipmentView — All state + logic for the Equipment listing page.
+ *
+ * Connects to Laravel backend via React Query + equipmentService.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
-import { usePersistedState } from "@/lib/persistence";
 import {
-    checkDuplicate,
-    collectErrors,
-    type FieldErrors,
-    isValid,
-    required,
-    sanitizeForm,
-    throttleSubmit,
-} from "@/lib/validation";
+    useCreateEquipment,
+    useDeleteEquipment,
+    useEquipmentList,
+    useUpdateEquipment,
+} from "@/hooks/useEquipmentQuery";
+import { isValidationError } from "@/types/api-error";
+import type {
+    EquipmentCategory,
+    EquipmentCondition,
+    EquipmentStatus,
+} from "@/types/enums";
+import {
+    EQUIPMENT_CATEGORIES,
+    EQUIPMENT_CONDITIONS,
+    EQUIPMENT_STATUSES,
+    formatEnumLabel,
+} from "@/types/enums";
+import type { EquipmentApi, EquipmentPayload } from "@/types/equipment";
 import type { LucideIcon } from "lucide-react";
-import {
-    AlertCircle,
-    Check,
-    Clock,
-    Cpu,
-    Flame,
-    Gauge,
-    Microscope,
-    Scan,
-    Sprout,
-    Wrench,
-} from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { Flame, Gauge, Microscope, Scan, Wrench } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-/* ─── Types ─────────────────────────────────────────────────────────────── */
+// ─── Types ─────────────────────────────────────────────────────────────────
 
-export interface EquipmentItem {
-  id: string;
-  name: string;
-  category: string;
-  status: string;
-  location: string;
-  lastMaintenance?: string;
-  borrowedBy?: string;
-  returnDate?: string;
-  issue?: string;
+export type EquipmentItem = EquipmentApi & {
   icon: LucideIcon;
   color: string;
-  imageUrl?: string;
-  notes?: string;
-  manufacturer?: string;
-  model?: string;
-  serialNumber?: string;
-  purchaseDate?: string;
-  purchasePrice?: string;
-  warrantyExpiry?: string;
-  depreciationRate?: string;
-}
+};
 
 export type EquipmentForm = {
   name: string;
+  equipmentCode: string;
   category: string;
   status: string;
+  condition: string;
   location: string;
-  lastMaintenance: string;
-  notes: string;
-  imageUrl: string;
   manufacturer: string;
-  model: string;
+  modelName: string;
   serialNumber: string;
   purchaseDate: string;
   purchasePrice: string;
-  warrantyExpiry: string;
-  depreciationRate: string;
-  borrowedBy: string;
-  returnDate: string;
-  issue: string;
+  description: string;
+  imageUrl: string;
 };
 
-/* ─── Constants ─────────────────────────────────────────────────────────── */
-
-const EMPTY_FORM: EquipmentForm = {
-  name: "",
-  category: "",
-  status: "Available",
-  location: "",
-  lastMaintenance: "",
-  notes: "",
-  imageUrl: "",
-  manufacturer: "",
-  model: "",
-  serialNumber: "",
-  purchaseDate: "",
-  purchasePrice: "",
-  warrantyExpiry: "",
-  depreciationRate: "",
-  borrowedBy: "",
-  returnDate: "",
-  issue: "",
-};
+// ─── Constants ─────────────────────────────────────────────────────────────
 
 export const CATEGORY_ICONS: Record<
   string,
   { icon: LucideIcon; color: string }
 > = {
-  Optics: { icon: Microscope, color: "hsl(210, 60%, 50%)" },
-  Sterilization: { icon: Flame, color: "hsl(0, 72%, 51%)" },
-  Measurement: { icon: Gauge, color: "hsl(175, 65%, 35%)" },
-  Processing: { icon: Scan, color: "hsl(270, 50%, 50%)" },
-  Analysis: { icon: Scan, color: "hsl(38, 92%, 50%)" },
-  "Sterile Work": { icon: Flame, color: "hsl(145, 63%, 32%)" },
-  "Plant Growth": { icon: Sprout, color: "hsl(80, 50%, 40%)" },
-  "Molecular Biology": { icon: Cpu, color: "hsl(330, 50%, 50%)" },
+  microscope: { icon: Microscope, color: "hsl(210, 60%, 50%)" },
+  centrifuge: { icon: Scan, color: "hsl(270, 50%, 50%)" },
+  incubator: { icon: Flame, color: "hsl(0, 72%, 51%)" },
+  spectrophotometer: { icon: Gauge, color: "hsl(175, 65%, 35%)" },
+  other: { icon: Wrench, color: "hsl(38, 92%, 50%)" },
 };
 
-const SEED_DATA: EquipmentItem[] = [
-  {
-    id: "EQ-001",
-    name: "Compound Microscope",
-    category: "Optics",
-    status: "Available",
-    location: "Lab Room 1",
-    lastMaintenance: "Jan 15, 2026",
-    icon: Microscope,
-    color: "hsl(210, 60%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1516383740770-fbcc5ccbece0?w=600&h=400&fit=crop",
-  },
-  {
-    id: "EQ-002",
-    name: "Autoclave (Large)",
-    category: "Sterilization",
-    status: "Borrowed",
-    location: "Lab Room 2",
-    borrowedBy: "Dr. Park",
-    returnDate: "Feb 10, 2026",
-    icon: Flame,
-    color: "hsl(0, 72%, 51%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?w=600&h=400&fit=crop",
-  },
-  {
-    id: "EQ-003",
-    name: "pH Meter",
-    category: "Measurement",
-    status: "Available",
-    location: "Chemistry Lab",
-    lastMaintenance: "Dec 20, 2025",
-    icon: Gauge,
-    color: "hsl(175, 65%, 35%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=600&h=400&fit=crop",
-  },
-  {
-    id: "EQ-004",
-    name: "Centrifuge (High-Speed)",
-    category: "Processing",
-    status: "Maintenance",
-    location: "Service Dept",
-    issue: "Rotor replacement",
-    icon: Scan,
-    color: "hsl(270, 50%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=600&h=400&fit=crop",
-  },
-  {
-    id: "EQ-005",
-    name: "Spectrophotometer",
-    category: "Analysis",
-    status: "Available",
-    location: "Lab Room 1",
-    lastMaintenance: "Jan 28, 2026",
-    icon: Scan,
-    color: "hsl(38, 92%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=600&h=400&fit=crop",
-  },
-  {
-    id: "EQ-006",
-    name: "Laminar Flow Hood",
-    category: "Sterile Work",
-    status: "Borrowed",
-    location: "Tissue Culture",
-    borrowedBy: "Emily Rodriguez",
-    returnDate: "Feb 08, 2026",
-    icon: Flame,
-    color: "hsl(145, 63%, 32%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=600&h=400&fit=crop",
-  },
-  {
-    id: "EQ-007",
-    name: "Growth Chamber",
-    category: "Plant Growth",
-    status: "Available",
-    location: "Plant Lab",
-    lastMaintenance: "Feb 01, 2026",
-    icon: Sprout,
-    color: "hsl(80, 50%, 40%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=600&h=400&fit=crop",
-  },
-  {
-    id: "EQ-008",
-    name: "PCR Thermocycler",
-    category: "Molecular Biology",
-    status: "Available",
-    location: "Molecular Lab",
-    lastMaintenance: "Jan 10, 2026",
-    icon: Cpu,
-    color: "hsl(330, 50%, 50%)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&h=400&fit=crop",
-  },
-];
+const EMPTY_FORM: EquipmentForm = {
+  name: "",
+  equipmentCode: "",
+  category: "other",
+  status: "available",
+  condition: "good",
+  location: "",
+  manufacturer: "",
+  modelName: "",
+  serialNumber: "",
+  purchaseDate: "",
+  purchasePrice: "",
+  description: "",
+  imageUrl: "",
+};
 
-/* ─── Status Helpers ────────────────────────────────────────────────────── */
+export {
+    EQUIPMENT_CATEGORIES,
+    EQUIPMENT_CONDITIONS,
+    EQUIPMENT_STATUSES,
+    formatEnumLabel
+};
 
-export function statusBadgeStyle(status: string) {
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+export const statusBadgeClass = (status: string): string => {
   switch (status) {
-    case "Available":
-      return "bg-primary text-primary-foreground";
-    case "Borrowed":
-      return "bg-warning text-warning-foreground";
-    case "Maintenance":
-      return "bg-destructive text-destructive-foreground";
+    case "available":
+      return "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950";
+    case "borrowed":
+      return "text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950";
+    case "in_use":
+      return "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950";
+    case "under_maintenance":
+      return "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950";
     default:
-      return "bg-muted text-muted-foreground";
+      return "text-muted-foreground bg-muted";
   }
+};
+
+export const conditionBadgeClass = (condition: string): string => {
+  switch (condition) {
+    case "good":
+      return "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950";
+    case "normal":
+      return "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950";
+    case "broken":
+      return "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950";
+    default:
+      return "text-muted-foreground bg-muted";
+  }
+};
+
+function toEquipmentItem(e: EquipmentApi): EquipmentItem {
+  const meta = CATEGORY_ICONS[e.category] || CATEGORY_ICONS.other;
+  return { ...e, icon: meta.icon, color: meta.color };
 }
 
-export function statusIconInfo(status: string) {
-  switch (status) {
-    case "Available":
-      return { icon: Check, className: "bg-muted text-primary border" };
-    case "Borrowed":
-      return {
-        icon: Clock,
-        className: "bg-warning/10 text-warning border-warning/30 border",
-      };
-    case "Maintenance":
-      return {
-        icon: AlertCircle,
-        className:
-          "bg-destructive/10 text-destructive border-destructive/30 border",
-      };
-    default:
-      return {
-        icon: AlertCircle,
-        className: "bg-muted text-muted-foreground border-border border",
-      };
-  }
+function formToPayload(form: EquipmentForm): EquipmentPayload {
+  return {
+    equipment_name: form.name,
+    equipment_code: form.equipmentCode || null,
+    category: form.category as EquipmentCategory,
+    status: form.status as EquipmentStatus,
+    condition: form.condition as EquipmentCondition,
+    location: form.location || null,
+    manufacturer: form.manufacturer || null,
+    model_name: form.modelName || null,
+    serial_number: form.serialNumber || null,
+    purchase_date: form.purchaseDate || null,
+    purchase_price: form.purchasePrice ? Number(form.purchasePrice) : null,
+    description: form.description || null,
+    image_url: form.imageUrl || null,
+  };
 }
 
-export function statusBackgroundStyle(status: string) {
-  switch (status) {
-    case "Available":
-      return "bg-primary/5 border-primary/20";
-    case "Borrowed":
-      return "bg-warning/5 border-warning/20";
-    case "Maintenance":
-      return "bg-destructive/5 border-destructive/20";
-    default:
-      return "bg-muted/50 border-border";
-  }
+function equipmentToForm(item: EquipmentApi): EquipmentForm {
+  return {
+    name: item.equipment_name,
+    equipmentCode: item.equipment_code || "",
+    category: item.category,
+    status: item.status,
+    condition: item.condition,
+    location: item.location || "",
+    manufacturer: item.manufacturer || "",
+    modelName: item.model_name || "",
+    serialNumber: item.serial_number || "",
+    purchaseDate: item.purchase_date || "",
+    purchasePrice: item.purchase_price || "",
+    description: item.description || "",
+    imageUrl: item.image_url || "",
+  };
 }
 
-/* ─── Hook ──────────────────────────────────────────────────────────────── */
+// ─── Backend Error Field Map ────────────────────────────────────────────────
+
+const BACKEND_FIELD_MAP: Record<string, keyof EquipmentForm> = {
+  equipment_name: "name",
+  equipment_code: "equipmentCode",
+  category: "category",
+  status: "status",
+  condition: "condition",
+  location: "location",
+  manufacturer: "manufacturer",
+  model_name: "modelName",
+  serial_number: "serialNumber",
+  purchase_date: "purchaseDate",
+  purchase_price: "purchasePrice",
+  description: "description",
+  image_url: "imageUrl",
+};
+
+type FormErrors = Partial<Record<keyof EquipmentForm, string>>;
+
+function mapBackendErrors(errors: Record<string, string[]>): FormErrors {
+  const mapped: FormErrors = {};
+  for (const [key, msgs] of Object.entries(errors)) {
+    const field = BACKEND_FIELD_MAP[key];
+    if (field) mapped[field] = msgs[0];
+  }
+  return mapped;
+}
+
+// ─── Hook ──────────────────────────────────────────────────────────────────
 
 export function useEquipmentView() {
   const navigate = useNavigate();
 
-  /* — Core State — */
-  const [items, setItems] = usePersistedState<EquipmentItem[]>(
-    "equipment",
-    SEED_DATA,
-  );
+  // ── Data from backend (paginated) ──
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const queryParams: Record<string, unknown> = { page };
+  if (searchQuery) queryParams.search = searchQuery;
+  if (statusFilter !== "all") queryParams.status = statusFilter;
+
+  const { data: response, isLoading, isError } = useEquipmentList(queryParams);
+
+  const rawItems = response?.data ?? [];
+  const meta = response?.meta;
+  const items: EquipmentItem[] = rawItems
+    .map(toEquipmentItem)
+    .sort((a, b) => a.id - b.id);
+
+  // ── Mutations ──
+  const createMutation = useCreateEquipment();
+  const updateMutation = useUpdateEquipment();
+  const deleteMutation = useDeleteEquipment();
+
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-
-  /* — Delete Confirmation — */
-  const deleteDialog = useConfirmDialog();
-
-  /* — Checkout Dialog — */
-  const [checkoutTarget, setCheckoutTarget] = useState<EquipmentItem | null>(
-    null,
-  );
-  const isCheckoutOpen = checkoutTarget !== null;
-
-  /* — Create / Edit Dialog — */
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<EquipmentItem | null>(null);
   const [form, setForm] = useState<EquipmentForm>(EMPTY_FORM);
-  const [formErrors, setFormErrors] = useState<
-    FieldErrors<keyof EquipmentForm>
-  >({});
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
-  /* — Derived Data — */
-  const filteredItems = useMemo(
-    () =>
-      items.filter((eq) => {
-        const q = searchQuery.toLowerCase();
-        return (
-          eq.name.toLowerCase().includes(q) ||
-          eq.category.toLowerCase().includes(q) ||
-          eq.id.toLowerCase().includes(q)
-        );
-      }),
-    [items, searchQuery],
-  );
+  // ── Delete confirmation ──
+  const deleteDialog = useConfirmDialog();
 
-  const quickStats: Stat[] = useMemo(() => {
-    const count = (status: string) =>
-      items.filter((e) => e.status === status).length;
-    return [
-      { label: "Available", value: count("Available"), color: "primary" },
-      { label: "Borrowed", value: count("Borrowed"), color: "warning" },
-      {
-        label: "Maintenance",
-        value: count("Maintenance"),
-        color: "destructive",
-      },
-    ];
-  }, [items]);
+  // ── Derived state ──
+  const filteredItems = items; // Server-side filtering
+
+  const availableCount = items.filter((e) => e.status === "available").length;
+  const borrowedCount = items.filter((e) => e.status === "borrowed").length;
+
+  const quickStats: Stat[] = [
+    {
+      label: "Total Equipment",
+      value: meta?.total ?? items.length,
+      color: "primary",
+    },
+    { label: "Available", value: availableCount, color: "primary" },
+    { label: "Borrowed", value: borrowedCount, color: "warning" },
+    {
+      label: "Maintenance",
+      value: items.filter((e) => e.status === "under_maintenance").length,
+      color: "destructive",
+    },
+  ];
 
   const isEditing = editingItem !== null;
   const formTitle = isEditing ? "Edit Equipment" : "Add New Equipment";
   const formDescription = isEditing
-    ? `Update details for ${editingItem?.name}.`
-    : "Fill in the details to add a new piece of equipment.";
-  const canSubmitForm =
-    form.name !== "" && form.category !== "" && form.location !== "";
-  const showBorrowedFields = form.status === "Borrowed";
-  const showMaintenanceFields = form.status === "Maintenance";
-  const showConditionalFields = showBorrowedFields || showMaintenanceFields;
+    ? `Update details for ${editingItem!.equipment_name}.`
+    : "Fill in the details to register new equipment.";
 
-  /* — Actions — */
-  const navigateToDetail = useCallback(
-    (id: string) => navigate(`/inventory/products/equipment/${id}`),
-    [navigate],
-  );
+  const canSubmitForm = Boolean(form.name && form.category);
 
-  const openCheckoutDialog = useCallback((equipment: EquipmentItem) => {
-    setCheckoutTarget(equipment);
-  }, []);
+  // ── Actions ──
+  const navigateToDetail = (id: number) =>
+    navigate(`/inventory/products/equipment/${id}`);
+  const updateSearchQuery = (q: string) => setSearchQuery(q);
+  const switchViewMode = (mode: ViewMode) => setViewMode(mode);
+  const updateStatusFilter = (s: string) => setStatusFilter(s);
 
-  const closeCheckoutDialog = useCallback(() => {
-    setCheckoutTarget(null);
-  }, []);
-
-  const openCreateForm = useCallback(() => {
+  const openCreateForm = () => {
     setEditingItem(null);
     setForm(EMPTY_FORM);
+    setFormErrors({});
     setFormOpen(true);
-  }, []);
-
-  const openEditForm = useCallback((eq: EquipmentItem) => {
-    setEditingItem(eq);
-    setForm({
-      name: eq.name,
-      category: eq.category,
-      status: eq.status,
-      location: eq.location,
-      lastMaintenance: eq.lastMaintenance || "",
-      notes: eq.notes || "",
-      imageUrl: eq.imageUrl || "",
-      manufacturer: eq.manufacturer || "",
-      model: eq.model || "",
-      serialNumber: eq.serialNumber || "",
-      purchaseDate: eq.purchaseDate || "",
-      purchasePrice: eq.purchasePrice || "",
-      warrantyExpiry: eq.warrantyExpiry || "",
-      depreciationRate: eq.depreciationRate || "",
-      borrowedBy: eq.borrowedBy || "",
-      returnDate: eq.returnDate || "",
-      issue: eq.issue || "",
-    });
-    setFormOpen(true);
-  }, []);
-
-  const closeForm = useCallback(() => {
+  };
+  const closeForm = () => {
     setFormOpen(false);
     setEditingItem(null);
-    setForm(EMPTY_FORM);
-  }, []);
+  };
 
-  const updateFormField = useCallback(
-    <K extends keyof EquipmentForm>(field: K, value: EquipmentForm[K]) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-    },
-    [],
-  );
+  const openEditForm = (eq: EquipmentItem) => {
+    setEditingItem(eq);
+    setForm(equipmentToForm(eq));
+    setFormErrors({});
+    setFormOpen(true);
+  };
 
-  const submitEquipmentForm = useCallback(() => {
-    // ── Throttle guard ──
-    const throttleErr = throttleSubmit("equipment_form", 1000);
-    if (throttleErr) {
-      toast.error(throttleErr);
-      return;
-    }
+  const updateFormField = <K extends keyof EquipmentForm>(
+    field: K,
+    value: EquipmentForm[K],
+  ) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
 
-    const clean = sanitizeForm(form);
-
-    // ── Validate ──
-    const errors = collectErrors<keyof EquipmentForm>({
-      name: required(clean.name, "Equipment name"),
-      category: required(clean.category, "Category"),
-      location: required(clean.location, "Location"),
-      serialNumber: clean.serialNumber
-        ? checkDuplicate(
-            items,
-            "serialNumber" as keyof EquipmentItem,
-            clean.serialNumber,
-            editingItem?.id,
-          )
-        : undefined,
-      status: undefined,
-      lastMaintenance: undefined,
-      notes: undefined,
-      imageUrl: undefined,
-      manufacturer: undefined,
-      model: undefined,
-      purchaseDate: undefined,
-      purchasePrice: undefined,
-      warrantyExpiry: undefined,
-      depreciationRate: undefined,
-      borrowedBy: undefined,
-      returnDate: undefined,
-      issue: undefined,
-    });
-    if (!isValid(errors)) {
-      setFormErrors(errors);
-      toast.error("Please fix the highlighted errors");
+  const submitEquipmentForm = () => {
+    if (!form.name || !form.category) {
+      toast.error("Please fill in all required fields");
       return;
     }
     setFormErrors({});
 
-    const catInfo = CATEGORY_ICONS[clean.category] || {
-      icon: Wrench,
-      color: "hsl(210, 20%, 50%)",
-    };
-    const optional = (v: string) => v || undefined;
-
-    const fields = {
-      name: clean.name,
-      category: clean.category,
-      status: clean.status,
-      location: clean.location,
-      lastMaintenance: optional(clean.lastMaintenance),
-      notes: optional(clean.notes),
-      icon: catInfo.icon,
-      color: catInfo.color,
-      imageUrl: optional(clean.imageUrl),
-      manufacturer: optional(clean.manufacturer),
-      model: optional(clean.model),
-      serialNumber: optional(clean.serialNumber),
-      purchaseDate: optional(clean.purchaseDate),
-      purchasePrice: optional(clean.purchasePrice),
-      warrantyExpiry: optional(clean.warrantyExpiry),
-      depreciationRate: optional(clean.depreciationRate),
-      borrowedBy: optional(clean.borrowedBy),
-      returnDate: optional(clean.returnDate),
-      issue: optional(clean.issue),
-    };
+    const payload = formToPayload(form);
 
     if (editingItem) {
-      setItems((prev) =>
-        prev.map((eq) =>
-          eq.id === editingItem.id ? { ...eq, ...fields } : eq,
-        ),
+      updateMutation.mutate(
+        { id: editingItem.id, payload },
+        {
+          onSuccess: () => {
+            setFormOpen(false);
+            setForm(EMPTY_FORM);
+            setEditingItem(null);
+            toast.success(`${form.name} updated successfully`);
+          },
+          onError: (err) => {
+            if (isValidationError(err)) {
+              setFormErrors(mapBackendErrors(err.response.data.errors));
+            }
+            toast.error(
+              isValidationError(err)
+                ? err.response.data.message
+                : "Failed to update equipment",
+            );
+          },
+        },
       );
     } else {
-      const newId = `EQ-${String(items.length + 1).padStart(3, "0")}`;
-      setItems((prev) => [...prev, { id: newId, ...fields } as EquipmentItem]);
-    }
-
-    toast.success(
-      editingItem
-        ? `${clean.name} updated successfully`
-        : `${clean.name} added successfully`,
-    );
-    closeForm();
-  }, [form, editingItem, items, closeForm, setFormErrors, setItems]);
-
-  /* — Delete Equipment — */
-  const requestDeleteEquipment = useCallback(
-    (eq: EquipmentItem) => {
-      deleteDialog.requestConfirm(eq.id, {
-        title: `Delete ${eq.name}?`,
-        description: `This will permanently remove ${eq.name} (${eq.id}).`,
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          setFormOpen(false);
+          setForm(EMPTY_FORM);
+          setEditingItem(null);
+          toast.success(`${form.name} added successfully`);
+        },
+        onError: (err) => {
+          if (isValidationError(err)) {
+            setFormErrors(mapBackendErrors(err.response.data.errors));
+          }
+          toast.error(
+            isValidationError(err)
+              ? err.response.data.message
+              : "Failed to create equipment",
+          );
+        },
       });
-    },
-    [deleteDialog],
-  );
+    }
+  };
 
-  const confirmDeleteEquipment = useCallback(() => {
-    deleteDialog.confirm((id) => {
-      setItems((prev) => prev.filter((eq) => eq.id !== id));
-      toast.success("Equipment deleted");
+  // ── Delete ──
+  const requestDeleteEquipment = (eq: EquipmentItem) => {
+    deleteDialog.requestConfirm(String(eq.id), {
+      title: `Delete ${eq.equipment_name}?`,
+      description: `This will permanently remove ${eq.equipment_name} (#${eq.id}).`,
     });
-  }, [deleteDialog, setItems]);
+  };
 
-  /* — Public Interface — */
+  const confirmDeleteEquipment = () => {
+    deleteDialog.confirm((id) => {
+      deleteMutation.mutate(Number(id), {
+        onSuccess: () => toast.success("Equipment deleted"),
+        onError: () => toast.error("Failed to delete equipment"),
+      });
+    });
+  };
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
   return {
-    /* List view */
     filteredItems,
-    totalCount: items.length,
+    totalCount: meta?.total ?? items.length,
     quickStats,
     searchQuery,
-    updateSearchQuery: setSearchQuery,
+    updateSearchQuery,
     viewMode,
-    switchViewMode: setViewMode,
+    switchViewMode,
+    statusFilter,
+    updateStatusFilter,
     navigateToDetail,
-
-    /* Checkout dialog */
-    checkoutTarget,
-    isCheckoutOpen,
-    openCheckoutDialog,
-    closeCheckoutDialog,
-
-    /* Form dialog */
     formOpen,
     isEditing,
     formTitle,
@@ -527,18 +378,20 @@ export function useEquipmentView() {
     form,
     formErrors,
     canSubmitForm,
-    showBorrowedFields,
-    showMaintenanceFields,
-    showConditionalFields,
     openCreateForm,
     openEditForm,
     closeForm,
     updateFormField,
     submitEquipmentForm,
-
-    /* Delete */
+    // Delete
     deleteDialog,
     requestDeleteEquipment,
     confirmDeleteEquipment,
+    isLoading,
+    isError,
+    isSubmitting,
+    page,
+    setPage,
+    meta,
   };
 }

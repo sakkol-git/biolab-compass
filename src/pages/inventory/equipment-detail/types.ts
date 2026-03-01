@@ -1,57 +1,25 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// EQUIPMENT DETAIL — Domain Types & Configuration Contracts (Phase 1)
-// ═══════════════════════════════════════════════════════════════════════════
-//
-// Types ARE the architecture.
-//
-// This file defines the closed-world discriminated union for every
-// renderable section on the Equipment Detail page. The union is
-// exhaustive: adding a new section type here will cause compile-time
-// errors in the registry and renderer until fully implemented.
-//
-// Zero runtime dispatch. Zero optional props (unless semantically optional).
+// EQUIPMENT DETAIL — Domain Types & Configuration Contracts
 // ═══════════════════════════════════════════════════════════════════════════
 
-import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 export type {
-  KpiStat,
-  InfoField,
-  ActionButton,
-  DetailHeaderConfig,
-  HeroImageConfig,
+    ActionButton,
+    DetailHeaderConfig,
+    HeroImageConfig, InfoField, KpiStat
 } from "@/components/detail/detail-types";
 
 import type {
-  KpiStat,
-  InfoField,
-  ActionButton,
-  DetailHeaderConfig,
-  HeroImageConfig,
+    ActionButton,
+    DetailHeaderConfig,
+    HeroImageConfig,
+    InfoField,
+    KpiStat,
 } from "@/components/detail/detail-types";
 
 // ─── Domain-Specific Data Shapes ─────────────────────────────────────────
-
-export interface SpecificationEntry {
-  label: string;
-  value: string;
-}
-
-export interface MaintenanceRecord {
-  date: string;
-  type: string;
-  technician: string;
-  notes: string;
-  cost: string;
-}
-
-export interface UsageRecord {
-  date: string;
-  user: string;
-  duration: string;
-  purpose: string;
-}
 
 export interface StatusAlert {
   icon: LucideIcon;
@@ -68,21 +36,7 @@ export interface SpecificationsSection {
   title: string;
   icon: LucideIcon;
   coreFields: InfoField[];
-  specifications: SpecificationEntry[];
-}
-
-export interface MaintenanceHistorySection {
-  readonly kind: "maintenance-history";
-  title: string;
-  icon: LucideIcon;
-  records: MaintenanceRecord[];
-}
-
-export interface UsageLogSection {
-  readonly kind: "usage-log";
-  title: string;
-  icon: LucideIcon;
-  records: UsageRecord[];
+  specifications: { label: string; value: string }[];
 }
 
 export interface FinancialSection {
@@ -108,8 +62,6 @@ export interface NotesSection {
 
 export type DetailSection =
   | SpecificationsSection
-  | MaintenanceHistorySection
-  | UsageLogSection
   | FinancialSection
   | LocationStatusSection
   | NotesSection;

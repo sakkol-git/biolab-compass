@@ -195,7 +195,7 @@ const FamilyFilter = ({
 
 interface SpeciesListProps {
   items: SpeciesItem[];
-  onNavigate: (id: string) => void;
+  onNavigate: (id: number) => void;
   onEdit: (sp: SpeciesItem) => void;
   onViewBatches: (name: string) => void;
 }
@@ -226,13 +226,15 @@ const SpeciesCard = ({
   onViewBatches,
 }: {
   item: SpeciesItem;
-  onNavigate: (id: string) => void;
+  onNavigate: (id: number) => void;
   onEdit: (sp: SpeciesItem) => void;
   onViewBatches: (name: string) => void;
 }) => {
   const Icon = item.icon;
-  const hasVarieties = item.varietyCount > 0;
-  const imageUrl = item.imageUrl;
+  const varietyCount = item.variety_count ?? 0;
+  const sampleCount = item.sample_count ?? 0;
+  const hasVarieties = varietyCount > 0;
+  const imageUrl = item.image_url;
 
   return (
     <ProductCard
@@ -250,32 +252,31 @@ const SpeciesCard = ({
         </>
       }
       title={
-        item.khmerName
-          ? `${item.commonName} (${item.khmerName})`
-          : item.commonName
+        item.khmer_name
+          ? `${item.common_name} (${item.khmer_name})`
+          : item.common_name
       }
-      subtitle={item.scientificName}
-      id={item.id}
+      subtitle={item.scientific_name}
+      id={String(item.id)}
       statusBadge={
         <div className="flex flex-wrap gap-1.5">
           <Badge
             variant={hasVarieties ? "default" : "secondary"}
             className="text-xs"
           >
-            {item.varietyCount}{" "}
-            {item.varietyCount === 1 ? "variety" : "varieties"}
+            {varietyCount} {varietyCount === 1 ? "variety" : "varieties"}
           </Badge>
           <Badge variant="outline" className="text-xs">
-            {item.sampleCount} {item.sampleCount === 1 ? "sample" : "samples"}
+            {sampleCount} {sampleCount === 1 ? "sample" : "samples"}
           </Badge>
         </div>
       }
       meta={[
-        { icon: Sprout, value: item.growthType || "N/A" },
+        { icon: Sprout, value: item.growth_type || "N/A" },
         {
           icon: TestTube,
-          label: item.quantityUnit || "units",
-          value: (item.totalQuantity ?? 0).toLocaleString(),
+          label: "units",
+          value: (item.total_quantity ?? 0).toLocaleString(),
         },
       ]}
       tags={[]}
@@ -334,7 +335,7 @@ const SpeciesTableRow = ({
   onViewBatches,
 }: {
   item: SpeciesItem;
-  onNavigate: (id: string) => void;
+  onNavigate: (id: number) => void;
   onEdit: (sp: SpeciesItem) => void;
   onViewBatches: (name: string) => void;
 }) => {
@@ -345,10 +346,12 @@ const SpeciesTableRow = ({
   };
   const stopAndViewBatches = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onViewBatches(item.commonName);
+    onViewBatches(item.common_name);
   };
-  const hasVarieties = item.varietyCount > 0;
-  const imageUrl = item.imageUrl;
+  const varietyCount = item.variety_count ?? 0;
+  const sampleCount = item.sample_count ?? 0;
+  const hasVarieties = varietyCount > 0;
+  const imageUrl = item.image_url;
 
   return (
     <TableRow
@@ -373,18 +376,18 @@ const SpeciesTableRow = ({
         </div>
       </TableCell>
       <TableCell className="font-mono text-xs text-muted-foreground/70">
-        {item.id}
+        #{item.id}
       </TableCell>
       <TableCell className="font-medium">
-        {item.commonName}
-        {item.khmerName && (
+        {item.common_name}
+        {item.khmer_name && (
           <span className="ml-1 text-xs text-muted-foreground">
-            ({item.khmerName})
+            ({item.khmer_name})
           </span>
         )}
       </TableCell>
       <TableCell className="italic text-muted-foreground">
-        {item.scientificName}
+        {item.scientific_name}
       </TableCell>
       <TableCell>
         <Badge variant="outline" className="text-xs">
@@ -396,19 +399,19 @@ const SpeciesTableRow = ({
           variant={hasVarieties ? "default" : "secondary"}
           className="text-xs"
         >
-          {item.varietyCount}
+          {varietyCount}
         </Badge>
       </TableCell>
       <TableCell className="text-center">
         <Badge variant="outline" className="text-xs">
-          {item.sampleCount}
+          {sampleCount}
         </Badge>
       </TableCell>
       <TableCell className="text-right font-medium tabular-nums">
-        {item.totalQuantity ? (
+        {(item.total_quantity ?? 0) > 0 ? (
           <QuantityBadge
-            quantity={item.totalQuantity}
-            unit={item.quantityUnit || "units"}
+            quantity={item.total_quantity ?? 0}
+            unit="units"
             variant="default"
             showIcon={false}
           />
@@ -431,7 +434,7 @@ const SpeciesTableRow = ({
             variant="ghost"
             size="sm"
             className="h-9 w-9 p-0"
-            aria-label={`Edit ${item.commonName}`}
+            aria-label={`Edit ${item.common_name}`}
             onClick={stopAndEdit}
           >
             <Pencil className="h-4 w-4" />
@@ -494,7 +497,7 @@ const SpeciesFormDialog = ({
 
 /* ─── Form Sections ─────────────────────────────────────────────────────── */
 
-import type { FieldErrors } from "@/lib/validation";
+type FormErrors = Partial<Record<keyof SpeciesForm, string>>;
 
 type FormSectionProps = {
   form: SpeciesForm;
@@ -502,7 +505,7 @@ type FormSectionProps = {
     field: K,
     value: SpeciesForm[K],
   ) => void;
-  errors?: FieldErrors<keyof SpeciesForm>;
+  errors?: FormErrors;
 };
 
 const BasicInfoSection = ({
@@ -603,9 +606,13 @@ const BasicInfoSection = ({
             <SelectValue placeholder="Select type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="annual">Annual</SelectItem>
-            <SelectItem value="perennial">Perennial</SelectItem>
-            <SelectItem value="biennial">Biennial</SelectItem>
+            <SelectItem value="herb">Herb</SelectItem>
+            <SelectItem value="shrub">Shrub</SelectItem>
+            <SelectItem value="tree">Tree</SelectItem>
+            <SelectItem value="vine">Vine</SelectItem>
+            <SelectItem value="grass">Grass</SelectItem>
+            <SelectItem value="aquatic">Aquatic</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
         {errors.growthType && (

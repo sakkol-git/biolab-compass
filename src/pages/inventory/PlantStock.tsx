@@ -5,15 +5,11 @@
  * This file is pure declarative JSX — no useState, no business logic.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-// ─── External ──────────────────────────────────────────────────────────────
-import { ProductCard } from "@/components/ui/ProductCard";
-import { Pencil, Plus, Sprout, Warehouse } from "lucide-react";
+import { Pencil, Plus, Sprout, Trash2, Warehouse } from "lucide-react";
 
-// ─── Internal Components ───────────────────────────────────────────────────
 import EmptyState from "@/components/EmptyState";
-import ImageUpload from "@/components/ImageUpload";
 import AppLayout from "@/components/layout/AppLayout";
-import ImageWithFallback from "@/components/shared/ImageWithFallback";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import PageHeader from "@/components/shared/PageHeader";
 import { QuickStats } from "@/components/shared/QuickStats";
 import SearchFilter from "@/components/shared/SearchFilter";
@@ -29,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ProductCard } from "@/components/ui/ProductCard";
 import {
     Select,
     SelectContent,
@@ -44,14 +41,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 
-// ─── Hook & Types ──────────────────────────────────────────────────────────
 import {
-    stageStyle,
+    formatEnumLabel,
+    statusStyle,
+    STOCK_STATUSES,
     usePlantStockView,
-    type StockForm,
-    type StockItem,
+    type StockItem
 } from "./usePlantStockView";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -68,7 +64,7 @@ const PlantStock = () => {
         <PageHeader
           icon={Warehouse}
           title="Plant Stock Management"
-          description="Track and manage plant inventory, growth stages, and stock levels"
+          description="Track and manage plant inventory and stock levels"
           actions={
             <Button className="gap-2" onClick={view.openCreateForm}>
               <Plus className="h-4 w-4" /> Add Stock
@@ -81,16 +77,11 @@ const PlantStock = () => {
         <SearchFilter
           query={view.searchQuery}
           onQueryChange={view.updateSearchQuery}
-          placeholder="Search by species, name, or batch ID..."
+          placeholder="Search by species name or stock ID..."
         >
-          <StageFilter
-            value={view.stageFilter}
-            onChange={view.updateStageFilter}
-          />
-          <LocationFilter
-            locations={view.locations}
-            value={view.locationFilter}
-            onChange={view.updateLocationFilter}
+          <StatusFilter
+            value={view.statusFilter}
+            onChange={view.updateStatusFilter}
           />
           <ViewToggle current={view.viewMode} onChange={view.switchViewMode} />
         </SearchFilter>
@@ -99,7 +90,7 @@ const PlantStock = () => {
           <EmptyState
             icon={Warehouse}
             title="No stock entries found"
-            description="Try adjusting your search, stage, or location filters."
+            description="Try adjusting your search or filters."
           />
         )}
 
@@ -116,6 +107,7 @@ const PlantStock = () => {
             items={view.filteredItems}
             onNavigate={view.navigateToDetail}
             onEdit={view.openEditForm}
+            onDelete={view.requestDeleteStock}
           />
         )}
 
@@ -128,6 +120,16 @@ const PlantStock = () => {
       </div>
 
       <StockFormDialog view={view} />
+
+      <ConfirmDialog
+        open={view.deleteDialog.open}
+        onOpenChange={view.deleteDialog.setOpen}
+        onConfirm={view.confirmDeleteStock}
+        title={view.deleteDialog.pendingMeta.title}
+        description={view.deleteDialog.pendingMeta.description}
+        confirmLabel="Delete"
+        variant="destructive"
+      />
     </AppLayout>
   );
 };
@@ -138,9 +140,9 @@ export default PlantStock;
  * SUB-COMPONENTS
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Filter Selects ────────────────────────────────────────────────────── */
+/* ─── Status Filter ─────────────────────────────────────────────────────── */
 
-const StageFilter = ({
+const StatusFilter = ({
   value,
   onChange,
 }: {
@@ -149,37 +151,13 @@ const StageFilter = ({
 }) => (
   <Select value={value} onValueChange={onChange}>
     <SelectTrigger className="w-full sm:w-40">
-      <SelectValue placeholder="All Stages" />
+      <SelectValue placeholder="All Status" />
     </SelectTrigger>
     <SelectContent>
-      <SelectItem value="all">All Stages</SelectItem>
-      <SelectItem value="seed">Seed</SelectItem>
-      <SelectItem value="seedling">Seedling</SelectItem>
-      <SelectItem value="growing">Growing</SelectItem>
-      <SelectItem value="harvested">Harvested</SelectItem>
-      <SelectItem value="failed">Failed</SelectItem>
-    </SelectContent>
-  </Select>
-);
-
-const LocationFilter = ({
-  locations,
-  value,
-  onChange,
-}: {
-  locations: string[];
-  value: string;
-  onChange: (v: string) => void;
-}) => (
-  <Select value={value} onValueChange={onChange}>
-    <SelectTrigger className="w-full sm:w-48">
-      <SelectValue placeholder="All Locations" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="all">All Locations</SelectItem>
-      {locations.map((loc) => (
-        <SelectItem key={loc} value={loc}>
-          {loc}
+      <SelectItem value="all">All Status</SelectItem>
+      {STOCK_STATUSES.map((s) => (
+        <SelectItem key={s} value={s}>
+          {formatEnumLabel(s)}
         </SelectItem>
       ))}
     </SelectContent>
@@ -190,8 +168,9 @@ const LocationFilter = ({
 
 interface StockListProps {
   items: StockItem[];
-  onNavigate: (id: string) => void;
+  onNavigate: (id: number) => void;
   onEdit: (b: StockItem) => void;
+  onDelete?: (b: StockItem) => void;
 }
 
 const StockGrid = ({ items, onNavigate, onEdit }: StockListProps) => (
@@ -208,40 +187,29 @@ const StockCard = ({
   onEdit,
 }: {
   item: StockItem;
-  onNavigate: (id: string) => void;
+  onNavigate: (id: number) => void;
   onEdit: (b: StockItem) => void;
 }) => {
-  const navigateToDetail = () => onNavigate(item.id);
-
-  // Build subtitle
-  const subtitle = item.species;
-
-  // Build metadata
-  const meta = [
-    { label: "Qty:", value: item.quantity },
-    { label: "Loc:", value: item.location },
-  ];
-
-  // Status badge (stage)
-  const statusBadge = (
-    <span className={stageStyle(item.stage)}>{item.stage}</span>
-  );
-
-  // Fallback image content
-  const fallbackImage = (
-    <Sprout className="h-20 w-20 text-muted-foreground/40" />
-  );
+  const speciesName = item.relations.species?.common_name || "Unknown Species";
+  const scientificName = item.relations.species?.scientific_name || "";
 
   return (
     <ProductCard
-      image={item.imageUrl}
-      fallbackImage={fallbackImage}
-      title={item.commonName}
-      subtitle={subtitle}
-      id={item.id}
-      statusBadge={statusBadge}
-      meta={meta}
-      onClick={navigateToDetail}
+      fallbackImage={<Sprout className="h-20 w-20 text-muted-foreground/40" />}
+      title={speciesName}
+      subtitle={scientificName}
+      id={`#${item.id}`}
+      statusBadge={
+        <span className={statusStyle(item.inventory.status)}>
+          {formatEnumLabel(item.inventory.status)}
+        </span>
+      }
+      meta={[
+        { label: "Total:", value: item.inventory.total },
+        { label: "Reserved:", value: item.inventory.reserved },
+        { label: "Available:", value: item.inventory.net_available },
+      ]}
+      onClick={() => onNavigate(item.id)}
       onEdit={() => onEdit(item)}
       className="aspect-square"
       imageBackgroundColor="bg-muted/30"
@@ -251,107 +219,95 @@ const StockCard = ({
 
 /* ─── Table View ────────────────────────────────────────────────────────── */
 
-const StockTable = ({ items, onNavigate, onEdit }: StockListProps) => (
+const StockTable = ({
+  items,
+  onNavigate,
+  onEdit,
+  onDelete,
+}: StockListProps) => (
   <div className="rounded-xl overflow-hidden border border-border/40">
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-16">Image</TableHead>
-          <TableHead className="w-24">Stock ID</TableHead>
+          <TableHead className="w-20">ID</TableHead>
           <TableHead>Species</TableHead>
-          <TableHead>Growth Stage</TableHead>
-          <TableHead className="text-right">Quantity</TableHead>
-          <TableHead>Location</TableHead>
-          <TableHead>Start Date</TableHead>
+          <TableHead>Variety</TableHead>
+          <TableHead className="text-right">Total</TableHead>
+          <TableHead className="text-right">Reserved</TableHead>
+          <TableHead className="text-right">Available</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="w-12"></TableHead>
+          <TableHead className="w-24 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {items.map((b) => (
-          <StockTableRow
+          <TableRow
             key={b.id}
-            item={b}
-            onNavigate={onNavigate}
-            onEdit={onEdit}
-          />
+            className="cursor-pointer"
+            onClick={() => onNavigate(b.id)}
+          >
+            <TableCell className="font-mono text-xs text-muted-foreground">
+              #{b.id}
+            </TableCell>
+            <TableCell>
+              <div>
+                <p className="font-medium">
+                  {b.relations.species?.common_name || "—"}
+                </p>
+                <p className="text-xs text-muted-foreground italic">
+                  {b.relations.species?.scientific_name || ""}
+                </p>
+              </div>
+            </TableCell>
+            <TableCell className="text-sm">
+              {b.relations.variety?.name || "—"}
+            </TableCell>
+            <TableCell className="text-right font-medium tabular-nums">
+              {b.inventory.total}
+            </TableCell>
+            <TableCell className="text-right tabular-nums">
+              {b.inventory.reserved}
+            </TableCell>
+            <TableCell className="text-right font-medium tabular-nums">
+              {b.inventory.net_available}
+            </TableCell>
+            <TableCell>
+              <span className={statusStyle(b.inventory.status)}>
+                {formatEnumLabel(b.inventory.status)}
+              </span>
+            </TableCell>
+            <TableCell className="text-right">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(b);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(b);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </TableCell>
+          </TableRow>
         ))}
       </TableBody>
     </Table>
   </div>
 );
-
-const StockTableRow = ({
-  item,
-  onNavigate,
-  onEdit,
-}: {
-  item: StockItem;
-  onNavigate: (id: string) => void;
-  onEdit: (b: StockItem) => void;
-}) => {
-  const navigateToDetail = () => onNavigate(item.id);
-  const stopAndEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onEdit(item);
-  };
-
-  return (
-    <TableRow
-      className="cursor-pointer"
-      onClick={navigateToDetail}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          navigateToDetail();
-        }
-      }}
-      role="link"
-      tabIndex={0}
-    >
-      <TableCell>
-        <div className="w-10 h-10 overflow-hidden bg-muted/50 flex items-center justify-center rounded-lg">
-          <ImageWithFallback
-            src={item.imageUrl}
-            alt={item.commonName}
-            fallback={<Sprout className="h-4 w-4 text-muted-foreground/50" />}
-          />
-        </div>
-      </TableCell>
-      <TableCell className="font-mono text-xs text-muted-foreground/70">
-        {item.id}
-      </TableCell>
-      <TableCell>
-        <div>
-          <p className="font-medium text-foreground">{item.commonName}</p>
-          <p className="text-xs text-muted-foreground/60 italic">
-            {item.species}
-          </p>
-        </div>
-      </TableCell>
-      <TableCell>
-        <span className={stageStyle(item.stage)}>{item.stage}</span>
-      </TableCell>
-      <TableCell className="text-right font-medium tabular-nums">
-        {item.quantity.toLocaleString()}
-      </TableCell>
-      <TableCell className="text-muted-foreground">{item.location}</TableCell>
-      <TableCell className="text-muted-foreground">{item.startDate}</TableCell>
-      <TableCell className="text-muted-foreground">{item.status}</TableCell>
-      <TableCell>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-9 w-9 p-0"
-          aria-label={`Edit stock ${item.id}`}
-          onClick={stopAndEdit}
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
-};
 
 /* ─── Form Dialog ───────────────────────────────────────────────────────── */
 
@@ -366,44 +322,78 @@ const StockFormDialog = ({
       if (!open) view.closeForm();
     }}
   >
-    <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{view.formTitle}</DialogTitle>
         <DialogDescription>{view.formDescription}</DialogDescription>
       </DialogHeader>
 
-      <div className="space-y-6 py-4">
+      <div className="space-y-4 py-4">
         <p className="text-xs text-muted-foreground">
           <span className="text-destructive">*</span> indicates a required field
         </p>
 
-        <SpeciesIdentSection
-          form={view.form}
-          updateField={view.updateFormField}
-        />
-        <GrowthStatusSection
-          form={view.form}
-          updateField={view.updateFormField}
-        />
-        <DatesSection form={view.form} updateField={view.updateFormField} />
-
         <div className="space-y-2">
-          <Label htmlFor="pb-notes">Notes</Label>
-          <Textarea
-            id="pb-notes"
-            placeholder="Stock observations, experiment details, growth notes..."
-            value={view.form.notes}
-            onChange={(e) => view.updateFormField("notes", e.target.value)}
-            rows={3}
-          />
+          <Label>Species *</Label>
+          <Select
+            value={view.form.speciesId}
+            onValueChange={(v) => view.updateFormField("speciesId", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select species" />
+            </SelectTrigger>
+            <SelectContent>
+              {view.species.map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>
+                  {s.common_name} ({s.scientific_name})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Quantity *</Label>
+            <Input
+              type="number"
+              min="0"
+              placeholder="e.g., 150"
+              value={view.form.quantity}
+              onChange={(e) => view.updateFormField("quantity", e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Reserved Quantity</Label>
+            <Input
+              type="number"
+              min="0"
+              placeholder="e.g., 10"
+              value={view.form.reservedQuantity}
+              onChange={(e) =>
+                view.updateFormField("reservedQuantity", e.target.value)
+              }
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
-          <Label>Stock Image</Label>
-          <ImageUpload
-            value={view.form.imageUrl}
-            onChange={(url) => view.updateFormField("imageUrl", url)}
-          />
+          <Label>Status *</Label>
+          <Select
+            value={view.form.status}
+            onValueChange={(v) => view.updateFormField("status", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STOCK_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {formatEnumLabel(s)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -417,168 +407,4 @@ const StockFormDialog = ({
       </DialogFooter>
     </DialogContent>
   </Dialog>
-);
-
-/* ─── Form Sections ─────────────────────────────────────────────────────── */
-
-type SectionProps = {
-  form: StockForm;
-  updateField: <K extends keyof StockForm>(
-    field: K,
-    value: StockForm[K],
-  ) => void;
-};
-
-const SpeciesIdentSection = ({ form, updateField }: SectionProps) => (
-  <fieldset>
-    <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-      <Sprout className="h-4 w-4 text-muted-foreground/60" /> Species &amp;
-      Identification
-    </legend>
-    <div className="grid grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="pb-common">Common Name *</Label>
-        <Input
-          id="pb-common"
-          placeholder="e.g., Tomato"
-          value={form.commonName}
-          onChange={(e) => updateField("commonName", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="pb-species">Scientific Name *</Label>
-        <Input
-          id="pb-species"
-          placeholder="e.g., Solanum lycopersicum"
-          value={form.species}
-          onChange={(e) => updateField("species", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2 col-span-2">
-        <Label htmlFor="pb-source">Source Material</Label>
-        <Input
-          id="pb-source"
-          placeholder="e.g., Seed lot TM-2024-A (certified)"
-          value={form.sourceMaterial}
-          onChange={(e) => updateField("sourceMaterial", e.target.value)}
-        />
-      </div>
-    </div>
-  </fieldset>
-);
-
-const GrowthStatusSection = ({ form, updateField }: SectionProps) => (
-  <fieldset>
-    <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-      <Sprout className="h-4 w-4 text-muted-foreground/60" /> Growth &amp;
-      Status
-    </legend>
-    <div className="grid grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="pb-stage">Growth Stage *</Label>
-        <Select
-          value={form.stage}
-          onValueChange={(v) => updateField("stage", v)}
-        >
-          <SelectTrigger id="pb-stage">
-            <SelectValue placeholder="Select stage" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Seed">Seed</SelectItem>
-            <SelectItem value="Seedling">Seedling</SelectItem>
-            <SelectItem value="Growing">Growing</SelectItem>
-            <SelectItem value="Harvested">Harvested</SelectItem>
-            <SelectItem value="Failed">Failed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="pb-status">Health Status *</Label>
-        <Select
-          value={form.status}
-          onValueChange={(v) => updateField("status", v)}
-        >
-          <SelectTrigger id="pb-status">
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Healthy">Healthy</SelectItem>
-            <SelectItem value="Dormant">Dormant</SelectItem>
-            <SelectItem value="Stressed">Stressed</SelectItem>
-            <SelectItem value="Processed">Processed</SelectItem>
-            <SelectItem value="Failed">Failed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="pb-qty">Quantity *</Label>
-        <Input
-          id="pb-qty"
-          type="number"
-          min="0"
-          placeholder="e.g., 150"
-          value={form.quantity}
-          onChange={(e) => updateField("quantity", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="pb-health">Health Score (0–100)</Label>
-        <Input
-          id="pb-health"
-          type="number"
-          min="0"
-          max="100"
-          placeholder="e.g., 92"
-          value={form.healthScore}
-          onChange={(e) => updateField("healthScore", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="pb-location">Location *</Label>
-        <Input
-          id="pb-location"
-          placeholder="e.g., Greenhouse A"
-          value={form.location}
-          onChange={(e) => updateField("location", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="pb-assigned">Assigned To</Label>
-        <Input
-          id="pb-assigned"
-          placeholder="e.g., Dr. Sarah Chen"
-          value={form.assignedTo}
-          onChange={(e) => updateField("assignedTo", e.target.value)}
-        />
-      </div>
-    </div>
-  </fieldset>
-);
-
-const DatesSection = ({ form, updateField }: SectionProps) => (
-  <fieldset>
-    <legend className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-      <Sprout className="h-4 w-4 text-muted-foreground/60" /> Dates
-    </legend>
-    <div className="grid grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="pb-start">Start Date *</Label>
-        <Input
-          id="pb-start"
-          type="date"
-          value={form.startDate}
-          onChange={(e) => updateField("startDate", e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="pb-harvest">Expected Harvest Date</Label>
-        <Input
-          id="pb-harvest"
-          type="date"
-          value={form.expectedHarvestDate}
-          onChange={(e) => updateField("expectedHarvestDate", e.target.value)}
-        />
-      </div>
-    </div>
-  </fieldset>
 );

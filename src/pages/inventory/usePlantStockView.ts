@@ -1,187 +1,115 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  * usePlantStockView — All state + logic for the Plant Stock Management page.
+ *
+ * Connects to Laravel backend via React Query + plantStockService.
+ * API response is nested (inventory/relations).
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 import { useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { Stat } from "@/components/shared/QuickStats";
 import type { ViewMode } from "@/components/shared/ViewToggle";
-import { usePersistedState } from "@/lib/persistence";
+import { usePlantSpeciesList } from "@/hooks/usePlantSpeciesQuery";
 import {
-    collectErrors,
-    type FieldErrors,
-    isValid,
-    positiveNumber,
-    required,
-    sanitizeForm,
-    throttleSubmit,
-} from "@/lib/validation";
+    useCreatePlantStock,
+    useDeletePlantStock,
+    usePlantStockList,
+    useUpdatePlantStock,
+} from "@/hooks/usePlantStockQuery";
+import { isValidationError } from "@/types/api-error";
+import type { StockStatus } from "@/types/enums";
+import { formatEnumLabel, STOCK_STATUSES } from "@/types/enums";
+import type {
+    PlantStockApi,
+    PlantStockCreatePayload,
+} from "@/types/plant-stock";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export interface StockItem {
-  id: string;
-  species: string;
-  commonName: string;
-  stage: string;
-  quantity: number;
-  location: string;
-  status: string;
-  startDate: string;
-  notes: string;
-  imageUrl?: string;
-  sourceMaterial?: string;
-  expectedHarvestDate?: string;
-  healthScore?: number;
-  assignedTo?: string;
-}
+export type StockItem = PlantStockApi;
 
 export interface StockForm {
-  species: string;
-  commonName: string;
-  stage: string;
+  speciesId: string;
+  varietyId: string;
+  sampleId: string;
   quantity: string;
-  location: string;
+  reservedQuantity: string;
   status: string;
-  startDate: string;
-  notes: string;
-  imageUrl: string;
-  sourceMaterial: string;
-  expectedHarvestDate: string;
-  healthScore: string;
-  assignedTo: string;
 }
+
+const EMPTY_FORM: StockForm = {
+  speciesId: "",
+  varietyId: "",
+  sampleId: "",
+  quantity: "",
+  reservedQuantity: "0",
+  status: "available",
+};
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
-export const stageStyle = (stage: string): string => {
-  switch (stage) {
-    case "Seed":
-      return "status-pill status-seed";
-    case "Seedling":
-      return "status-pill status-seedling";
-    case "Growing":
-      return "status-pill status-growing";
-    case "Harvested":
-      return "status-pill status-harvested";
-    case "Failed":
-      return "status-pill status-failed";
+export const statusStyle = (status: string): string => {
+  switch (status) {
+    case "available":
+      return "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950 px-2 py-1 rounded-lg text-xs font-medium";
+    case "reserved":
+      return "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950 px-2 py-1 rounded-lg text-xs font-medium";
+    case "out_of_stock":
+      return "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950 px-2 py-1 rounded-lg text-xs font-medium";
     default:
-      return "status-pill status-seed";
+      return "text-muted-foreground bg-muted px-2 py-1 rounded-lg text-xs font-medium";
   }
 };
 
-const EMPTY_FORM: StockForm = {
-  species: "",
-  commonName: "",
-  stage: "Seed",
-  quantity: "",
-  location: "",
-  status: "Healthy",
-  startDate: "",
-  notes: "",
-  imageUrl: "",
-  sourceMaterial: "",
-  expectedHarvestDate: "",
-  healthScore: "",
-  assignedTo: "",
+export { formatEnumLabel, STOCK_STATUSES };
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function formToPayload(form: StockForm): PlantStockCreatePayload {
+  return {
+    plant_specy_id: Number(form.speciesId),
+    plant_variety_id: form.varietyId ? Number(form.varietyId) : null,
+    plant_sample_id: form.sampleId ? Number(form.sampleId) : null,
+    quantity: Number(form.quantity) || 0,
+    reserved_quantity: Number(form.reservedQuantity) || 0,
+    status: form.status as StockStatus,
+  };
+}
+
+function stockToForm(item: PlantStockApi): StockForm {
+  return {
+    speciesId: item.relations.species ? String(item.relations.species.id) : "",
+    varietyId: item.relations.variety ? String(item.relations.variety.id) : "",
+    sampleId: item.relations.sample ? String(item.relations.sample.id) : "",
+    quantity: String(item.inventory.total),
+    reservedQuantity: String(item.inventory.reserved),
+    status: item.inventory.status,
+  };
+}
+
+// ─── Backend Error Field Map ────────────────────────────────────────────────
+
+const BACKEND_FIELD_MAP: Record<string, keyof StockForm> = {
+  plant_specy_id: "speciesId",
+  plant_variety_id: "varietyId",
+  plant_sample_id: "sampleId",
+  quantity: "quantity",
+  reserved_quantity: "reservedQuantity",
+  status: "status",
 };
 
-const SEED_DATA: StockItem[] = [
-  {
-    id: "PB-001",
-    species: "Solanum lycopersicum",
-    commonName: "Tomato",
-    stage: "Growing",
-    quantity: 150,
-    location: "Greenhouse A",
-    status: "Healthy",
-    startDate: "2025-11-15",
-    notes: "Experimental cultivar trial",
-    imageUrl:
-      "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=600&h=400&fit=crop",
-  },
-  {
-    id: "PB-002",
-    species: "Arabidopsis thaliana",
-    commonName: "Thale Cress",
-    stage: "Seedling",
-    quantity: 300,
-    location: "Growth Chamber 1",
-    status: "Healthy",
-    startDate: "2026-01-03",
-    notes: "Gene expression study",
-    imageUrl:
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop",
-  },
-  {
-    id: "PB-003",
-    species: "Zea mays",
-    commonName: "Maize",
-    stage: "Seed",
-    quantity: 500,
-    location: "Cold Storage",
-    status: "Dormant",
-    startDate: "2025-09-20",
-    notes: "Stored for spring planting",
-    imageUrl:
-      "https://images.unsplash.com/photo-1551268831-81d0b7c7c1b8?w=600&h=400&fit=crop",
-  },
-  {
-    id: "PB-004",
-    species: "Oryza sativa",
-    commonName: "Rice",
-    stage: "Growing",
-    quantity: 200,
-    location: "Greenhouse B",
-    status: "Healthy",
-    startDate: "2025-12-01",
-    notes: "Drought resistance study",
-    imageUrl:
-      "https://images.unsplash.com/photo-1536304929831-774a1e21e4db?w=600&h=400&fit=crop",
-  },
-  {
-    id: "PB-005",
-    species: "Nicotiana tabacum",
-    commonName: "Tobacco",
-    stage: "Harvested",
-    quantity: 45,
-    location: "Drying Room",
-    status: "Processed",
-    startDate: "2025-08-10",
-    notes: "Transient expression batch",
-    imageUrl:
-      "https://images.unsplash.com/photo-1515150144380-bca9f1650ed9?w=600&h=400&fit=crop",
-  },
-  {
-    id: "PB-006",
-    species: "Glycine max",
-    commonName: "Soybean",
-    stage: "Failed",
-    quantity: 0,
-    location: "Greenhouse A",
-    status: "Failed",
-    startDate: "2025-10-05",
-    notes: "Contamination detected",
-    imageUrl:
-      "https://images.unsplash.com/photo-1595855759920-86582396756a?w=600&h=400&fit=crop",
-  },
-  {
-    id: "PB-007",
-    species: "Triticum aestivum",
-    commonName: "Wheat",
-    stage: "Seedling",
-    quantity: 400,
-    location: "Field Plot 1",
-    status: "Healthy",
-    startDate: "2026-01-20",
-    notes: "Winter wheat variety trial",
-    imageUrl:
-      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&h=400&fit=crop",
-  },
-];
+type FormErrors = Partial<Record<keyof StockForm, string>>;
+
+function mapBackendErrors(errors: Record<string, string[]>): FormErrors {
+  const mapped: FormErrors = {};
+  for (const [key, msgs] of Object.entries(errors)) {
+    const field = BACKEND_FIELD_MAP[key];
+    if (field) mapped[field] = msgs[0];
+  }
+  return mapped;
+}
 
 // ─── Hook ──────────────────────────────────────────────────────────────────
 
@@ -190,79 +118,90 @@ export function usePlantStockView() {
   const [searchParams] = useSearchParams();
   const speciesParam = searchParams.get("species") || "";
 
-  const [items, setItems] = usePersistedState<StockItem[]>(
-    "plant_stock",
-    SEED_DATA,
-  );
+  // ── Data from backend (paginated) ──
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState(speciesParam);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const queryParams: Record<string, unknown> = { page };
+  if (searchQuery) queryParams.search = searchQuery;
+  if (statusFilter !== "all") queryParams.status = statusFilter;
+
+  const { data: response, isLoading, isError } = usePlantStockList(queryParams);
+
+  const rawItems = response?.data ?? [];
+  const meta = response?.meta;
+  const items: StockItem[] = [...rawItems].sort((a, b) => a.id - b.id);
+
+  // ── Species for dropdown ──
+  const { data: speciesResponse } = usePlantSpeciesList({ per_page: 100 });
+  const species = speciesResponse?.data ?? [];
+
+  // ── Mutations ──
+  const createMutation = useCreatePlantStock();
+  const updateMutation = useUpdatePlantStock();
+  const deleteMutation = useDeletePlantStock();
+
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [stageFilter, setStageFilter] = useState("all");
-  const [locationFilter, setLocationFilter] = useState("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [form, setForm] = useState<StockForm>(EMPTY_FORM);
-  const [formErrors, setFormErrors] = useState<FieldErrors<keyof StockForm>>(
-    {},
-  );
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   // ── Delete confirmation ──
   const deleteDialog = useConfirmDialog();
 
   // ── Derived ──
-  const locations = [...new Set(items.map((b) => b.location))];
+  const filteredItems = items; // Server-side filtering
 
-  const filteredItems = items.filter((b) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      b.species.toLowerCase().includes(q) ||
-      b.commonName.toLowerCase().includes(q) ||
-      b.id.toLowerCase().includes(q);
-    const matchesStage =
-      stageFilter === "all" || b.stage.toLowerCase() === stageFilter;
-    const matchesLocation =
-      locationFilter === "all" || b.location === locationFilter;
-    return matchesSearch && matchesStage && matchesLocation;
-  });
-
-  const totalPlants = items.reduce((sum, b) => sum + b.quantity, 0);
-  const healthyCount = items.filter((b) => b.status === "Healthy").length;
+  const totalPlants = items.reduce((sum, s) => sum + s.inventory.total, 0);
+  const totalAvailable = items.reduce(
+    (sum, s) => sum + s.inventory.net_available,
+    0,
+  );
 
   const quickStats: Stat[] = [
-    { label: "Total Stock", value: items.length, color: "primary" },
-    { label: "Healthy", value: healthyCount, color: "primary" },
+    {
+      label: "Total Stock",
+      value: meta?.total ?? items.length,
+      color: "primary",
+    },
     {
       label: "Total Plants",
       value: totalPlants.toLocaleString(),
+      color: "primary",
+    },
+    {
+      label: "Available",
+      value: totalAvailable.toLocaleString(),
       color: "muted",
     },
-    { label: "Locations", value: locations.length, color: "muted" },
+    {
+      label: "Out of Stock",
+      value: items.filter((s) => s.inventory.status === "out_of_stock").length,
+      color: "destructive",
+    },
   ];
 
   const isEditing = editingItem !== null;
   const formTitle = isEditing ? "Edit Stock Entry" : "Add New Stock";
   const formDescription = isEditing
-    ? `Update details for stock ${editingItem!.id}.`
+    ? `Update details for stock #${editingItem!.id}.`
     : "Fill in the details to start tracking a new plant stock entry.";
 
-  const canSubmitForm = Boolean(
-    form.commonName &&
-    form.species &&
-    form.quantity &&
-    form.location &&
-    form.startDate,
-  );
+  const canSubmitForm = Boolean(form.speciesId && form.quantity);
 
   // ── Actions ──
-  const navigateToDetail = (id: string) =>
+  const navigateToDetail = (id: number) =>
     navigate(`/inventory/products/stock/${id}`);
   const updateSearchQuery = (q: string) => setSearchQuery(q);
   const switchViewMode = (mode: ViewMode) => setViewMode(mode);
-  const updateStageFilter = (s: string) => setStageFilter(s);
-  const updateLocationFilter = (l: string) => setLocationFilter(l);
+  const updateStatusFilter = (s: string) => setStatusFilter(s);
 
   const openCreateForm = () => {
     setEditingItem(null);
     setForm(EMPTY_FORM);
+    setFormErrors({});
     setFormOpen(true);
   };
   const closeForm = () => {
@@ -272,22 +211,8 @@ export function usePlantStockView() {
 
   const openEditForm = (stock: StockItem) => {
     setEditingItem(stock);
-    setForm({
-      species: stock.species,
-      commonName: stock.commonName,
-      stage: stock.stage,
-      quantity: String(stock.quantity),
-      location: stock.location,
-      status: stock.status,
-      startDate: stock.startDate,
-      notes: stock.notes,
-      imageUrl: stock.imageUrl || "",
-      sourceMaterial: stock.sourceMaterial || "",
-      expectedHarvestDate: stock.expectedHarvestDate || "",
-      healthScore:
-        stock.healthScore !== undefined ? String(stock.healthScore) : "",
-      assignedTo: stock.assignedTo || "",
-    });
+    setForm(stockToForm(stock));
+    setFormErrors({});
     setFormOpen(true);
   };
 
@@ -299,122 +224,89 @@ export function usePlantStockView() {
   };
 
   const submitStockForm = () => {
-    // ── Throttle guard ──
-    const throttleErr = throttleSubmit("stock_form", 1000);
-    if (throttleErr) {
-      toast.error(throttleErr);
-      return;
-    }
-
-    const clean = sanitizeForm(form);
-
-    // ── Validate ──
-    const errors = collectErrors<keyof StockForm>({
-      commonName: required(clean.commonName, "Common name"),
-      species: required(clean.species, "Species"),
-      quantity: positiveNumber(clean.quantity, "Quantity"),
-      location: required(clean.location, "Location"),
-      startDate: required(clean.startDate, "Start date"),
-      stage: undefined,
-      status: undefined,
-      notes: undefined,
-      imageUrl: undefined,
-      sourceMaterial: undefined,
-      expectedHarvestDate: undefined,
-      healthScore: undefined,
-      assignedTo: undefined,
-    });
-    if (!isValid(errors)) {
-      setFormErrors(errors);
-      toast.error("Please fix the highlighted errors");
+    if (!form.speciesId || !form.quantity) {
+      toast.error("Please fill in all required fields");
       return;
     }
     setFormErrors({});
 
+    const payload = formToPayload(form);
+
     if (editingItem) {
-      setItems((prev) =>
-        prev.map((b) =>
-          b.id === editingItem.id
-            ? {
-                ...b,
-                species: clean.species,
-                commonName: clean.commonName,
-                stage: clean.stage,
-                quantity: Number(clean.quantity) || 0,
-                location: clean.location,
-                status: clean.status,
-                startDate: clean.startDate,
-                notes: clean.notes,
-                imageUrl: clean.imageUrl || undefined,
-                sourceMaterial: clean.sourceMaterial || undefined,
-                expectedHarvestDate: clean.expectedHarvestDate || undefined,
-                healthScore: clean.healthScore
-                  ? Number(clean.healthScore)
-                  : undefined,
-                assignedTo: clean.assignedTo || undefined,
-              }
-            : b,
-        ),
+      updateMutation.mutate(
+        { id: editingItem.id, payload },
+        {
+          onSuccess: () => {
+            setFormOpen(false);
+            setForm(EMPTY_FORM);
+            setEditingItem(null);
+            toast.success("Stock entry updated successfully");
+          },
+          onError: (err) => {
+            if (isValidationError(err)) {
+              setFormErrors(mapBackendErrors(err.response.data.errors));
+            }
+            toast.error(
+              isValidationError(err)
+                ? err.response.data.message
+                : "Failed to update stock entry",
+            );
+          },
+        },
       );
     } else {
-      const newId = `PB-${String(items.length + 1).padStart(3, "0")}`;
-      const newItem: StockItem = {
-        id: newId,
-        species: clean.species,
-        commonName: clean.commonName,
-        stage: clean.stage,
-        quantity: Number(clean.quantity) || 0,
-        location: clean.location,
-        status: clean.status,
-        startDate: clean.startDate,
-        notes: clean.notes,
-        imageUrl: clean.imageUrl || undefined,
-        sourceMaterial: clean.sourceMaterial || undefined,
-        expectedHarvestDate: clean.expectedHarvestDate || undefined,
-        healthScore: clean.healthScore ? Number(clean.healthScore) : undefined,
-        assignedTo: clean.assignedTo || undefined,
-      };
-      setItems((prev) => [...prev, newItem]);
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          setFormOpen(false);
+          setForm(EMPTY_FORM);
+          setEditingItem(null);
+          toast.success("Stock entry added successfully");
+        },
+        onError: (err) => {
+          if (isValidationError(err)) {
+            setFormErrors(mapBackendErrors(err.response.data.errors));
+          }
+          toast.error(
+            isValidationError(err)
+              ? err.response.data.message
+              : "Failed to create stock entry",
+          );
+        },
+      });
     }
-
-    setFormOpen(false);
-    setForm(EMPTY_FORM);
-    toast.success(
-      isEditing
-        ? `Stock ${editingItem!.id} updated successfully`
-        : "New stock entry added successfully",
-    );
-    setEditingItem(null);
   };
 
   // ── Delete Stock (with confirmation) ──
   const requestDeleteStock = (stock: StockItem) => {
-    deleteDialog.requestConfirm(stock.id, {
-      title: `Delete stock ${stock.id}?`,
-      description: `This will permanently remove ${stock.commonName} stock entry.`,
+    const speciesName =
+      stock.relations.species?.common_name || `Stock #${stock.id}`;
+    deleteDialog.requestConfirm(String(stock.id), {
+      title: `Delete ${speciesName} stock?`,
+      description: `This will permanently remove stock entry #${stock.id}.`,
     });
   };
 
   const confirmDeleteStock = () => {
     deleteDialog.confirm((id) => {
-      setItems((prev) => prev.filter((b) => b.id !== id));
-      toast.success("Stock entry deleted");
+      deleteMutation.mutate(Number(id), {
+        onSuccess: () => toast.success("Stock entry deleted"),
+        onError: () => toast.error("Failed to delete stock entry"),
+      });
     });
   };
 
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
   return {
     filteredItems,
-    totalCount: items.length,
+    totalCount: meta?.total ?? items.length,
     quickStats,
-    locations,
     searchQuery,
     updateSearchQuery,
     viewMode,
     switchViewMode,
-    stageFilter,
-    updateStageFilter,
-    locationFilter,
-    updateLocationFilter,
+    statusFilter,
+    updateStatusFilter,
     navigateToDetail,
     formOpen,
     isEditing,
@@ -428,9 +320,16 @@ export function usePlantStockView() {
     closeForm,
     updateFormField,
     submitStockForm,
+    species,
     // Delete
     deleteDialog,
     requestDeleteStock,
     confirmDeleteStock,
+    isLoading,
+    isError,
+    isSubmitting,
+    page,
+    setPage,
+    meta,
   };
 }

@@ -54,7 +54,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canImportData: true,
   },
   "Lab Manager": {
-    canManageUsers: false,
+    canManageUsers: true,
     canManageRoles: false,
     canManageSystemSettings: false,
     canDeleteAnyData: false,

@@ -1,102 +1,124 @@
-# Welcome to your Lovable project
+# Plant Lab Inventory
 
-## Project info
+Full-stack plant laboratory inventory and operations platform.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Overview
 
-## How can I edit this code?
+This repository contains:
 
-There are several ways of editing your application.
+- Backend API in Laravel (`Backend/`)
+- Frontend app in React + Vite (`frontend/`)
+- Docker setup for local containerized development (`Dockerfile`, `docker-compose.yml`, `docker/`)
 
-**Use Lovable**
+The system supports inventory management, laboratory workflows, business operations, reporting, and role-based access control.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- Backend: Laravel 12, PHP 8.2+, PostgreSQL
+- Frontend: React, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- Auth/Security: Laravel Sanctum, JWT support
+- Testing: Pest / PHPUnit (backend), Vitest (frontend)
 
-**Use your preferred IDE**
+## Repository Structure
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```text
+.
+├── Backend/
+│   ├── app/
+│   ├── config/
+│   ├── database/
+│   ├── routes/
+│   ├── tests/
+│   └── docs/
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── docs/
+│   └── package.json
+├── docker/
+├── Dockerfile
+└── docker-compose.yml
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Quick Start (Local)
 
-Follow these steps:
+### 1) Backend
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+cd Backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Backend API base URL:
 
-# Step 3: Install the necessary dependencies.
-npm i
+```text
+http://127.0.0.1:8000/api
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 2) Frontend
+
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Frontend default URL:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```text
+http://localhost:5173
+```
 
-**Use GitHub Codespaces**
+## Docker (Optional)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+From repository root:
 
-## What technologies are used for this project?
+```bash
+docker compose up --build
+```
 
-This project is built with:
+Use this when you want a containerized environment instead of running backend/frontend directly on host.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Common Development Commands
 
-## How can I deploy this project?
+### Backend
 
-### Deploy to Vercel (Recommended)
+```bash
+cd Backend
+php artisan serve
+php artisan migrate
+php artisan test
+composer test
+composer lint
+./test-api.sh
+```
 
-1. **Fork/Clone this repository** (if you haven't already)
+### Frontend
 
-2. **Connect to Vercel:**
-   - Go to [Vercel](https://vercel.com)
-   - Click "Add New Project"
-   - Import your Git repository
-   - Vercel will auto-detect the Vite framework
+```bash
+cd frontend
+npm run dev
+npm run build
+npm run lint
+npm run test
+```
 
-3. **Configure build settings** (should be auto-detected):
-   - Framework Preset: `Vite`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-   - Install Command: `npm install`
+## Configuration Notes
 
-4. **Add environment variables** (if needed):
-   - In Vercel dashboard, go to Settings → Environment Variables
-   - Add any required `VITE_*` prefixed variables
-   - See `.env.example` for reference
+- Configure backend database credentials in `Backend/.env`.
+- Keep backend CORS settings aligned with frontend origin in `Backend/config/cors.php`.
+- For local split-host development, run backend and frontend on separate ports and verify auth/cookie settings.
 
-5. **Deploy:**
-   - Click "Deploy"
-   - Your app will be live in minutes!
+## Documentation
 
-### Deploy to Lovable
+- Backend docs: `Backend/docs/`
+- Frontend docs: `frontend/docs/`
+- Backend quick reference: `Backend/docs/README.md`
 
-Alternatively, you can open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share → Publish.
+## License
 
-### Custom Domain
-
-You can connect a custom domain to your Vercel deployment:
-- In Vercel dashboard, go to Project Settings → Domains
-- Add your custom domain and follow the DNS configuration instructions
-
-For Lovable deployments, navigate to Project → Settings → Domains and click Connect Domain.
-
-Read more: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+MIT

@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Business\Requests\Payment;
+
+use App\Enums\PaymentStatus;
+use App\Enums\PaymentType;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class StorePaymentRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()->hasPermissionTo('contracts.create', 'api');
+    }
+
+    /** @return array<string, mixed> */
+    public function rules(): array
+    {
+        return [
+            'contract_id' => ['required', 'integer', 'exists:contracts,id'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'payment_type' => ['required', Rule::enum(PaymentType::class)],
+            'status' => ['sometimes', Rule::enum(PaymentStatus::class)],
+            'reference_number' => ['nullable', 'string', 'max:100'],
+            'due_date' => ['nullable', 'date'],
+            'payment_date' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string'],
+        ];
+    }
+}
